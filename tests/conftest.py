@@ -139,8 +139,6 @@ def analytics_cache():
     )
 
 
-
-
 @pytest.fixture
 def mock_service_clients():
     """Mock external service clients"""
