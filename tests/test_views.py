@@ -488,7 +488,6 @@ class TestErrorHandling:
             patch("apps.analytics.views.ReportViewSet.get_object") as mock_get_object,
             patch("apps.analytics.views.ReportGenerator") as mock_generator,
         ):
-
             mock_get_object.return_value = completed_report
             mock_generator_instance = Mock()
             mock_generator_instance.export_report.side_effect = Exception(
@@ -524,7 +523,6 @@ class TestErrorHandling:
             ),
             patch("apps.analytics.views.AnalyticsCache.cache_data"),
         ):
-
             data = {
                 "metric_name": "productivity",
                 "context": {"user_id": "test-user-id"},

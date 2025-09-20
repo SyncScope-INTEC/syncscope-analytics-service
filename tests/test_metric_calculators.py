@@ -161,7 +161,6 @@ class TestProductivityMetricCalculator:
                 "apps.analytics.service_integration.ManagementServiceClient"
             ) as mock_management,
         ):
-
             # Mock empty responses
             mock_monitoring_instance = Mock()
             mock_monitoring_instance.get_user_sessions.return_value = {"sessions": []}
