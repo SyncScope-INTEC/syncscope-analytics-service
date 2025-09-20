@@ -20,6 +20,7 @@ def atomic_with_retry(max_retries: int = 3, delay: float = 0.5) -> Callable:
     Returns:
         Decorated function with retry logic
     """
+
     def decorator(func: Callable) -> Callable:
         @functools.wraps(func)
         def wrapper(*args, **kwargs) -> Any:
@@ -39,7 +40,9 @@ def atomic_with_retry(max_retries: int = 3, delay: float = 0.5) -> Callable:
                         time.sleep(delay)
                         delay *= 2  # Exponential backoff
                     else:
-                        logger.error(f"Database operation failed after {max_retries + 1} attempts: {e}")
+                        logger.error(
+                            f"Database operation failed after {max_retries + 1} attempts: {e}"
+                        )
                         raise
                 except Exception as e:
                     # Don't retry for non-operational errors
@@ -51,6 +54,7 @@ def atomic_with_retry(max_retries: int = 3, delay: float = 0.5) -> Callable:
                 raise last_exception
 
         return wrapper
+
     return decorator
 
 
@@ -65,6 +69,7 @@ def retry_on_database_error(max_retries: int = 3, delay: float = 0.5) -> Callabl
     Returns:
         Decorated function with retry logic
     """
+
     def decorator(func: Callable) -> Callable:
         @functools.wraps(func)
         def wrapper(*args, **kwargs) -> Any:
@@ -83,7 +88,9 @@ def retry_on_database_error(max_retries: int = 3, delay: float = 0.5) -> Callabl
                         time.sleep(delay)
                         delay *= 2  # Exponential backoff
                     else:
-                        logger.error(f"Database operation failed after {max_retries + 1} attempts: {e}")
+                        logger.error(
+                            f"Database operation failed after {max_retries + 1} attempts: {e}"
+                        )
                         raise
                 except Exception as e:
                     # Don't retry for non-operational errors
@@ -95,4 +102,5 @@ def retry_on_database_error(max_retries: int = 3, delay: float = 0.5) -> Callabl
                 raise last_exception
 
         return wrapper
+
     return decorator
