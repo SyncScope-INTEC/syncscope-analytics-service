@@ -102,7 +102,7 @@ jobs:
           CACHE_TIMEOUT: "60"
           MAX_REPORT_SIZE: "1000"
         run: |
-          python manage.py migrate --settings=config.test_settings
+          python manage.py migrate --run-syncdb --settings=config.test_settings
           python manage.py check --settings=config.test_settings
 
       - name: Run linting

@@ -23,16 +23,9 @@ CACHES = {
 }
 
 
-# Disable migrations for faster tests
-class DisableMigrations:
-    def __contains__(self, item):
-        return True
-
-    def __getitem__(self, item):
-        return None
-
-
-MIGRATION_MODULES = DisableMigrations()
+# Keep migrations enabled for CI to ensure all tables are created
+# We can disable specific app migrations if needed for performance
+# MIGRATION_MODULES = DisableMigrations()
 
 # Use console email backend for testing
 EMAIL_BACKEND = "django.core.mail.backends.console.EmailBackend"
