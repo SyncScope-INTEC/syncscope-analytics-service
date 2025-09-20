@@ -25,7 +25,7 @@ seaborn==0.13.0
 influxdb-client==1.38.0
 
 # HTTP Requests
-requests==2.31.0
+requests==2.32.5
 httpx==0.25.2
 
 # File Processing & Export
