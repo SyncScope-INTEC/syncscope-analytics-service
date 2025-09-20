@@ -33,7 +33,7 @@ reportlab==4.0.7
 openpyxl==3.1.2
 
 # Production
-gunicorn==21.2.0
+gunicorn==23.0.0
 whitenoise==6.6.0
 
 # Development
