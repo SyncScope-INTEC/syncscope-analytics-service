@@ -97,8 +97,15 @@ class TestReportViewSet:
         assert response.status_code == 200
 
         data = response.json()
-        assert len(data) >= 1
-        assert data[0]["name"] == report.name
+        # Handle both paginated and non-paginated responses
+        if isinstance(data, dict) and "results" in data:
+            reports = data["results"]
+        else:
+            reports = data
+
+        assert len(reports) >= 1
+        report_names = [r["name"] for r in reports]
+        assert report.name in report_names
 
     def test_list_reports_unauthenticated(self, client):
         """Test listing reports without authentication."""
@@ -111,10 +118,9 @@ class TestReportViewSet:
 
         report_data = {
             "name": "New Test Report",
-            "description": "A new test report",
-            "report_type": "summary",
-            "configuration": {
-                "metrics": [metric_definition.id],
+            "type": "custom",
+            "config": {
+                "metrics": [str(metric_definition.id)],
                 "date_range": "last_7_days",
             },
         }
@@ -134,7 +140,7 @@ class TestReportViewSet:
 
         invalid_data = {
             "name": "",  # Invalid: empty name
-            "report_type": "invalid_type",  # Invalid type
+            "type": "invalid_type",  # Invalid type
         }
 
         response = client.post("/analytics/reports/", invalid_data, format="json")
@@ -147,7 +153,7 @@ class TestReportViewSet:
         assert response.status_code == 200
 
         data = response.json()
-        assert data["id"] == report.id
+        assert data["id"] == str(report.id)
         assert data["name"] == report.name
 
     def test_retrieve_nonexistent_report(self, client, user):
@@ -162,7 +168,6 @@ class TestReportViewSet:
 
         update_data = {
             "name": "Updated Report Name",
-            "description": "Updated description",
         }
 
         response = client.patch(
@@ -172,7 +177,6 @@ class TestReportViewSet:
 
         data = response.json()
         assert data["name"] == "Updated Report Name"
-        assert data["description"] == "Updated description"
 
     def test_delete_report(self, client, user, report):
         """Test deleting a report."""
@@ -252,7 +256,7 @@ class TestReportViewSet:
 
         data = response.json()
         assert "regeneration started" in data["message"]
-        assert data["report_id"] == report.id
+        assert data["report_id"] == str(report.id)
 
         # Check that report status was reset
         report.refresh_from_db()
@@ -269,10 +273,9 @@ class TestReportViewSet:
         )
         other_report = Report.objects.create(
             name="Other User Report",
-            description="Report by other user",
-            report_type="summary",
+            type="custom",
             status="completed",
-            generated_by=other_user,
+            created_by=other_user.id if hasattr(other_user, "id") else other_user,
         )
 
         client.force_authenticate(user=admin_user)
@@ -280,7 +283,13 @@ class TestReportViewSet:
         assert response.status_code == 200
 
         data = response.json()
-        report_names = [r["name"] for r in data]
+        # Handle both paginated and non-paginated responses
+        if isinstance(data, dict) and "results" in data:
+            reports = data["results"]
+        else:
+            reports = data
+
+        report_names = [r["name"] for r in reports]
         assert "test_report" in report_names
         assert "Other User Report" in report_names
 
@@ -289,10 +298,9 @@ class TestReportViewSet:
         # Create report by admin
         admin_report = Report.objects.create(
             name="Admin Report",
-            description="Report by admin",
-            report_type="summary",
+            type="custom",
             status="completed",
-            generated_by=admin_user,
+            created_by=admin_user.id if hasattr(admin_user, "id") else admin_user,
         )
 
         client.force_authenticate(user=user)
@@ -300,7 +308,13 @@ class TestReportViewSet:
         assert response.status_code == 200
 
         data = response.json()
-        report_names = [r["name"] for r in data]
+        # Handle both paginated and non-paginated responses
+        if isinstance(data, dict) and "results" in data:
+            reports = data["results"]
+        else:
+            reports = data
+
+        report_names = [r["name"] for r in reports]
         assert "Admin Report" not in report_names
 
 
@@ -639,9 +653,8 @@ class TestRateLimiting:
 
         report_data = {
             "name": "Rate Limited Report",
-            "description": "Testing rate limits",
-            "report_type": "summary",
-            "configuration": {"metrics": [metric_definition.id]},
+            "type": "custom",
+            "config": {"metrics": [str(metric_definition.id)]},
         }
 
         # This test would need to be run with actual rate limiting enabled

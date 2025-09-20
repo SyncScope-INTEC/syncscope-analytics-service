@@ -98,7 +98,7 @@ def check_redis_connection() -> bool:
 
     # Log Redis configuration for debugging
     redis_url = getattr(settings, "REDIS_URL", None)
-    cache_location = settings.CACHES["default"]["LOCATION"]
+    cache_location = settings.CACHES["default"].get("LOCATION", "N/A (DummyCache)")
     logger.info(
         f"Redis health check - REDIS_URL: {redis_url}, Cache location: {cache_location}"
     )

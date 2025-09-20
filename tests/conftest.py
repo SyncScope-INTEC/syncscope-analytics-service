@@ -58,6 +58,8 @@ def metric_definition_complex():
 @pytest.fixture
 def report(user, metric_definition):
     """Create a test report."""
+    from django.utils import timezone
+
     return Report.objects.create(
         name="test_report",
         type="custom",
@@ -65,6 +67,7 @@ def report(user, metric_definition):
         created_by=user.id if hasattr(user, "id") else user,
         config={"metrics": [str(metric_definition.id)], "date_range": "last_7_days"},
         data={"total_requests": 1000, "average_response_time": 250},
+        generated_at=timezone.now(),
     )
 
 

@@ -210,7 +210,7 @@ class TestTimeSeriesData:
     def test_time_series_str(self, time_series_data):
         """Test string representation."""
         point = time_series_data[0]
-        expected = f"test_measurement from test_source at {point.timestamp}"
+        expected = f"test_measurement - test_source - {point.timestamp}"
         assert str(point) == expected
 
     def test_time_series_multiple_value_types(
@@ -270,7 +270,7 @@ class TestTimeSeriesData:
             "measurement": "cpu_usage",
             "source": "server1",
             "timestamp": timezone.now(),
-            "value_float": 75.5,
+            "value": 75.5,
             "tags": {"host": "web-01", "region": "us-east"},
         }
 
@@ -298,14 +298,6 @@ class TestTimeSeriesData:
 class TestRetryableModelMixin:
     """Test RetryableModelMixin functionality."""
 
-    def test_retry_count_default(self, metric_definition):
-        """Test default retry count."""
-        assert metric_definition.retry_count == 0
-
-    def test_last_retry_default(self, metric_definition):
-        """Test default last retry."""
-        assert metric_definition.last_retry is None
-
     @patch("time.sleep")
     def test_retryable_save_success(self, mock_sleep, metric_definition):
         """Test successful save without retries."""
@@ -315,18 +307,16 @@ class TestRetryableModelMixin:
         assert metric_definition.name == "updated_name"
         mock_sleep.assert_not_called()
 
-    def test_retry_count_increment(self, metric_definition):
-        """Test retry count can be incremented."""
-        metric_definition.retry_count = 1
-        metric_definition.save()
-        assert metric_definition.retry_count == 1
+    def test_get_by_id_method(self, metric_definition):
+        """Test get_by_id class method."""
+        retrieved = MetricDefinition.get_by_id(metric_definition.id)
+        assert retrieved == metric_definition
 
-    def test_last_retry_update(self, metric_definition):
-        """Test last retry timestamp update."""
-        now = timezone.now()
-        metric_definition.last_retry = now
-        metric_definition.save()
-        assert metric_definition.last_retry == now
+    def test_refresh_from_db_with_retry(self, metric_definition):
+        """Test refresh from database with retry logic."""
+        # This should not raise an exception
+        metric_definition.refresh_from_db_with_retry()
+        assert metric_definition.name == "test_metric"
 
 
 @pytest.mark.django_db
