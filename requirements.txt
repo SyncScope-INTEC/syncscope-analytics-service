@@ -22,7 +22,7 @@ matplotlib==3.8.2
 seaborn==0.13.0
 
 # Time Series Database
-influxdb-client==1.38.0
+influxdb-client==1.49.0
 
 # HTTP Requests
 requests==2.31.0
