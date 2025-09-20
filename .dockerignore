@@ -1,0 +1,196 @@
+# Git and version control
+.git
+.gitignore
+.gitattributes
+.github
+
+# Python
+__pycache__
+*.pyc
+*.pyo
+*.pyd
+.Python
+build
+develop-eggs
+dist
+downloads
+eggs
+.eggs
+lib
+lib64
+parts
+sdist
+var
+wheels
+*.egg-info
+.installed.cfg
+*.egg
+MANIFEST
+
+# Virtual environments
+.env
+.venv
+env/
+venv/
+ENV/
+env.bak/
+venv.bak/
+.pipenv
+
+# IDE and editor files
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.DS_Store
+Thumbs.db
+
+# Testing and coverage
+.coverage
+.pytest_cache/
+.tox/
+.cache
+.coverage.*
+coverage.xml
+*.cover
+.hypothesis/
+htmlcov/
+.coverage
+.nox/
+
+# Documentation
+docs/_build/
+docs/.doctrees/
+.sphinx/
+
+# Database
+*.db
+*.sqlite3
+db.sqlite3
+
+# Environment files
+.env
+.env.*
+!.env.example
+
+# Logs
+logs/
+*.log
+
+# Static and media files (will be collected during build)
+staticfiles/
+media/
+
+# Temporary files
+tmp/
+temp/
+.tmp/
+
+# OS generated files
+.DS_Store*
+ehthumbs.db
+Icon?
+Thumbs.db
+*.cab
+*.msi
+*.msm
+*.msp
+
+# Node.js (if any frontend assets)
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Frontend build artifacts
+/static/
+/build/
+/dist/
+
+# Backup files
+*.bak
+*.backup
+*.orig
+
+# Jupyter notebooks
+.ipynb_checkpoints
+
+# mypy
+.mypy_cache/
+.dmypy.json
+dmypy.json
+
+# Pyre type checker
+.pyre/
+
+# Local development files
+docker-compose.override.yml
+docker-compose.local.yml
+
+# Data files
+data/
+*.csv
+*.json
+*.xlsx
+*.pdf
+reports/
+
+# Cache
+.cache/
+
+# Runtime
+*.pid
+*.sock
+
+# Config files that shouldn't be in container
+local_settings.py
+local_config.py
+
+# Kubernetes
+*.yaml
+*.yml
+k8s/
+
+# Terraform
+*.tf
+*.tfstate
+*.tfvars
+
+# Secrets
+secrets/
+certs/
+keys/
+
+# Deployment specific
+Procfile
+runtime.txt
+app.json
+
+# README and documentation (already copied explicitly if needed)
+README.md
+CONTRIBUTING.md
+CHANGELOG.md
+LICENSE
+
+# CI/CD files
+.travis.yml
+.circleci/
+.gitlab-ci.yml
+azure-pipelines.yml
+Jenkinsfile
+
+# Package managers
+poetry.lock
+Pipfile
+Pipfile.lock
+
+# Analytics service specific
+influxdb_data/
+redis_data/
+postgres_data/
+
+# Backup and export files
+exports/
+backups/
+dumps/

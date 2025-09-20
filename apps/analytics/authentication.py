@@ -3,11 +3,13 @@ JWT Authentication for Analytics Service
 Validates JWT tokens issued by the Auth Service
 """
 
-import jwt
 import logging
-import requests
+
 from django.conf import settings
 from django.contrib.auth.models import AnonymousUser
+
+import jwt
+import requests
 from rest_framework import authentication, exceptions
 
 logger = logging.getLogger(__name__)
@@ -20,12 +22,12 @@ class AnalyticsUser:
     """
 
     def __init__(self, user_data):
-        self.id = user_data.get('user_id')
-        self.email = user_data.get('email', '')
-        self.first_name = user_data.get('first_name', '')
-        self.last_name = user_data.get('last_name', '')
-        self.role = user_data.get('role', 'developer')
-        self.company_id = user_data.get('company_id')
+        self.id = user_data.get("user_id")
+        self.email = user_data.get("email", "")
+        self.first_name = user_data.get("first_name", "")
+        self.last_name = user_data.get("last_name", "")
+        self.role = user_data.get("role", "developer")
+        self.company_id = user_data.get("company_id")
         self.is_authenticated = True
         self.is_anonymous = False
 
@@ -37,10 +39,10 @@ class AnalyticsUser:
         return f"{self.first_name} {self.last_name}".strip()
 
     def is_admin(self):
-        return self.role == 'admin'
+        return self.role == "admin"
 
     def is_supervisor(self):
-        return self.role in ['admin', 'supervisor']
+        return self.role in ["admin", "supervisor"]
 
 
 class JWTAuthentication(authentication.BaseAuthentication):
@@ -52,15 +54,15 @@ class JWTAuthentication(authentication.BaseAuthentication):
         """
         Authenticate the request and return a two-tuple of (user, token).
         """
-        auth_header = request.META.get('HTTP_AUTHORIZATION')
+        auth_header = request.META.get("HTTP_AUTHORIZATION")
 
         if not auth_header:
             return None
 
         try:
             # Extract token from "Bearer <token>" format
-            token_type, token = auth_header.split(' ', 1)
-            if token_type.lower() != 'bearer':
+            token_type, token = auth_header.split(" ", 1)
+            if token_type.lower() != "bearer":
                 return None
 
         except ValueError:
@@ -74,24 +76,21 @@ class JWTAuthentication(authentication.BaseAuthentication):
         """
         try:
             # Decode JWT token
-            payload = jwt.decode(
-                token,
-                settings.JWT_SECRET_KEY,
-                algorithms=['HS256']
-            )
+            payload = jwt.decode(token, settings.JWT_SECRET_KEY, algorithms=["HS256"])
 
             # Verify token type
-            if payload.get('token_type') != 'access':
-                raise exceptions.AuthenticationFailed('Invalid token type')
+            if payload.get("token_type") != "access":
+                raise exceptions.AuthenticationFailed("Invalid token type")
 
             # Check if token is expired
             import time
-            if payload.get('exp', 0) < time.time():
-                raise exceptions.AuthenticationFailed('Token has expired')
+
+            if payload.get("exp", 0) < time.time():
+                raise exceptions.AuthenticationFailed("Token has expired")
 
             # Verify issuer
-            if payload.get('iss') != 'syncscope-auth':
-                raise exceptions.AuthenticationFailed('Invalid token issuer')
+            if payload.get("iss") != "syncscope-auth":
+                raise exceptions.AuthenticationFailed("Invalid token issuer")
 
             # Create user object from token payload
             user = AnalyticsUser(payload)
@@ -100,17 +99,17 @@ class JWTAuthentication(authentication.BaseAuthentication):
 
         except jwt.InvalidTokenError as e:
             logger.warning(f"Invalid JWT token: {e}")
-            raise exceptions.AuthenticationFailed('Invalid token')
+            raise exceptions.AuthenticationFailed("Invalid token")
         except Exception as e:
             logger.error(f"Authentication error: {e}")
-            raise exceptions.AuthenticationFailed('Authentication failed')
+            raise exceptions.AuthenticationFailed("Authentication failed")
 
     def authenticate_header(self, request):
         """
         Return a string to be used as the value of the `WWW-Authenticate`
         header in a `401 Unauthenticated` response.
         """
-        return 'Bearer'
+        return "Bearer"
 
 
 class ServiceAuthentication:
@@ -124,19 +123,15 @@ class ServiceAuthentication:
         Verify a service-to-service authentication token
         """
         try:
-            payload = jwt.decode(
-                token,
-                settings.JWT_SECRET_KEY,
-                algorithms=['HS256']
-            )
+            payload = jwt.decode(token, settings.JWT_SECRET_KEY, algorithms=["HS256"])
 
             # Check if it's a service token
-            if payload.get('token_type') != 'service':
+            if payload.get("token_type") != "service":
                 return False
 
             # Verify service name
-            service_name = payload.get('service_name')
-            if service_name not in ['monitoring', 'management', 'alerts']:
+            service_name = payload.get("service_name")
+            if service_name not in ["monitoring", "management", "alerts"]:
                 return False
 
             return True
@@ -145,21 +140,21 @@ class ServiceAuthentication:
             return False
 
     @staticmethod
-    def create_service_token(service_name='analytics'):
+    def create_service_token(service_name="analytics"):
         """
         Create a service authentication token for outgoing requests
         """
         import time
 
         payload = {
-            'token_type': 'service',
-            'service_name': service_name,
-            'iat': int(time.time()),
-            'exp': int(time.time()) + 3600,  # 1 hour expiration
-            'iss': 'syncscope-analytics'
+            "token_type": "service",
+            "service_name": service_name,
+            "iat": int(time.time()),
+            "exp": int(time.time()) + 3600,  # 1 hour expiration
+            "iss": "syncscope-analytics",
         }
 
-        return jwt.encode(payload, settings.JWT_SECRET_KEY, algorithm='HS256')
+        return jwt.encode(payload, settings.JWT_SECRET_KEY, algorithm="HS256")
 
 
 class UserPermissions:
@@ -236,6 +231,6 @@ def get_auth_headers():
     """
     service_token = ServiceAuthentication.create_service_token()
     return {
-        'Authorization': f'Bearer {service_token}',
-        'Content-Type': 'application/json'
+        "Authorization": f"Bearer {service_token}",
+        "Content-Type": "application/json",
     }
