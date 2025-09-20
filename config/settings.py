@@ -12,7 +12,11 @@ from decouple import config
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 
-SECRET_KEY = config("SECRET_KEY")
+# Generate a default secret key for development
+import secrets
+DEFAULT_SECRET_KEY = secrets.token_urlsafe(50)
+
+SECRET_KEY = config("SECRET_KEY", default=DEFAULT_SECRET_KEY)
 
 DEBUG = config("DEBUG", default=True, cast=bool)
 
@@ -287,11 +291,6 @@ MANAGEMENT_SERVICE_URL = config("MANAGEMENT_SERVICE_URL", default="http://localh
 # JWT Configuration
 JWT_SECRET_KEY = config("JWT_SECRET_KEY", default=SECRET_KEY)
 
-# InfluxDB Configuration
-INFLUXDB_URL = config("INFLUXDB_URL", default="http://localhost:8086")
-INFLUXDB_TOKEN = config("INFLUXDB_TOKEN", default="")
-INFLUXDB_ORG = config("INFLUXDB_ORG", default="syncscope")
-INFLUXDB_BUCKET = config("INFLUXDB_BUCKET", default="analytics")
 
 # Analytics Configuration
 ENABLE_ML_PREDICTIONS = config("ENABLE_ML_PREDICTIONS", default=True, cast=bool)

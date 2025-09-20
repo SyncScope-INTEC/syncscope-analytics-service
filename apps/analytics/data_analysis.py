@@ -416,3 +416,222 @@ def optimize_dataframe_memory(df: pd.DataFrame) -> pd.DataFrame:
     except Exception as e:
         logger.error(f"Error optimizing DataFrame memory: {e}")
         return df
+
+
+class ReportGenerator:
+    """
+    Report generation and export utilities
+    """
+
+    def __init__(self):
+        self.data_analyzer = DataAnalyzer()
+
+    def export_report(self, report, export_format: str, include_charts: bool = True, detailed: bool = False):
+        """
+        Export report in specified format
+
+        Args:
+            report: Report model instance
+            export_format: Format (pdf, excel, csv, json)
+            include_charts: Include visualizations
+            detailed: Include detailed breakdown
+
+        Returns:
+            Tuple of (file_content, content_type, filename)
+        """
+        try:
+            if export_format == 'json':
+                return self._export_json(report, detailed)
+            elif export_format == 'csv':
+                return self._export_csv(report, detailed)
+            elif export_format == 'excel':
+                return self._export_excel(report, include_charts, detailed)
+            elif export_format == 'pdf':
+                return self._export_pdf(report, include_charts, detailed)
+            else:
+                raise ValueError(f"Unsupported export format: {export_format}")
+
+        except Exception as e:
+            logger.error(f"Error exporting report {report.id}: {e}")
+            raise
+
+    def _export_json(self, report, detailed: bool):
+        """Export report as JSON"""
+        import json
+
+        data = {
+            'report_id': str(report.id),
+            'name': report.name,
+            'type': report.type,
+            'generated_at': report.generated_at.isoformat() if report.generated_at else None,
+            'data': report.data
+        }
+
+        if detailed and report.config:
+            data['config'] = report.config
+
+        content = json.dumps(data, indent=2, default=str)
+        filename = f"{report.name}_{report.type}_report.json"
+
+        return content.encode('utf-8'), 'application/json', filename
+
+    def _export_csv(self, report, detailed: bool):
+        """Export report as CSV"""
+        import io
+        import csv
+
+        output = io.StringIO()
+        writer = csv.writer(output)
+
+        # Write header information
+        writer.writerow(['Report Name', report.name])
+        writer.writerow(['Report Type', report.type])
+        writer.writerow(['Generated At', report.generated_at.isoformat() if report.generated_at else 'N/A'])
+        writer.writerow([])  # Empty row
+
+        # Write data
+        if report.data and isinstance(report.data, dict):
+            if 'metrics' in report.data:
+                writer.writerow(['Metric', 'Value', 'Unit'])
+                for metric, value in report.data['metrics'].items():
+                    if isinstance(value, dict):
+                        for sub_metric, sub_value in value.items():
+                            writer.writerow([f"{metric}.{sub_metric}", sub_value, ''])
+                    else:
+                        writer.writerow([metric, value, ''])
+
+        content = output.getvalue()
+        filename = f"{report.name}_{report.type}_report.csv"
+
+        return content.encode('utf-8'), 'text/csv', filename
+
+    def _export_excel(self, report, include_charts: bool, detailed: bool):
+        """Export report as Excel"""
+        import io
+        import pandas as pd
+
+        output = io.BytesIO()
+
+        # Create Excel writer
+        with pd.ExcelWriter(output, engine='openpyxl') as writer:
+            # Summary sheet
+            summary_data = {
+                'Report Information': [
+                    'Report Name', 'Report Type', 'Generated At', 'Status'
+                ],
+                'Values': [
+                    report.name,
+                    report.type,
+                    report.generated_at.isoformat() if report.generated_at else 'N/A',
+                    report.status
+                ]
+            }
+
+            summary_df = pd.DataFrame(summary_data)
+            summary_df.to_excel(writer, sheet_name='Summary', index=False)
+
+            # Data sheet
+            if report.data and isinstance(report.data, dict):
+                if 'metrics' in report.data:
+                    metrics_data = []
+                    for metric, value in report.data['metrics'].items():
+                        if isinstance(value, dict):
+                            for sub_metric, sub_value in value.items():
+                                metrics_data.append({
+                                    'Metric': f"{metric}.{sub_metric}",
+                                    'Value': sub_value
+                                })
+                        else:
+                            metrics_data.append({
+                                'Metric': metric,
+                                'Value': value
+                            })
+
+                    if metrics_data:
+                        metrics_df = pd.DataFrame(metrics_data)
+                        metrics_df.to_excel(writer, sheet_name='Metrics', index=False)
+
+        filename = f"{report.name}_{report.type}_report.xlsx"
+
+        return output.getvalue(), 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet', filename
+
+    def _export_pdf(self, report, include_charts: bool, detailed: bool):
+        """Export report as PDF"""
+        import io
+        from reportlab.lib.pagesizes import letter
+        from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer, Table, TableStyle
+        from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
+        from reportlab.lib import colors
+        from reportlab.lib.units import inch
+
+        buffer = io.BytesIO()
+        doc = SimpleDocTemplate(buffer, pagesize=letter)
+        styles = getSampleStyleSheet()
+        story = []
+
+        # Title
+        title_style = ParagraphStyle(
+            'CustomTitle',
+            parent=styles['Heading1'],
+            fontSize=24,
+            spaceAfter=30,
+            textColor=colors.darkblue
+        )
+        story.append(Paragraph(f"{report.name} - {report.type.title()} Report", title_style))
+        story.append(Spacer(1, 12))
+
+        # Report Information
+        info_data = [
+            ['Report Information', ''],
+            ['Generated At', report.generated_at.strftime('%Y-%m-%d %H:%M:%S') if report.generated_at else 'N/A'],
+            ['Status', report.status.title()],
+            ['Type', report.type.title()],
+        ]
+
+        info_table = Table(info_data, colWidths=[2*inch, 4*inch])
+        info_table.setStyle(TableStyle([
+            ('BACKGROUND', (0, 0), (-1, 0), colors.grey),
+            ('TEXTCOLOR', (0, 0), (-1, 0), colors.whitesmoke),
+            ('ALIGN', (0, 0), (-1, -1), 'LEFT'),
+            ('FONTNAME', (0, 0), (-1, 0), 'Helvetica-Bold'),
+            ('FONTSIZE', (0, 0), (-1, 0), 14),
+            ('BOTTOMPADDING', (0, 0), (-1, 0), 12),
+            ('BACKGROUND', (0, 1), (-1, -1), colors.beige),
+            ('GRID', (0, 0), (-1, -1), 1, colors.black)
+        ]))
+
+        story.append(info_table)
+        story.append(Spacer(1, 20))
+
+        # Metrics data
+        if report.data and isinstance(report.data, dict) and 'metrics' in report.data:
+            story.append(Paragraph("Metrics", styles['Heading2']))
+            story.append(Spacer(1, 12))
+
+            metrics_data = [['Metric', 'Value']]
+            for metric, value in report.data['metrics'].items():
+                if isinstance(value, dict):
+                    for sub_metric, sub_value in value.items():
+                        metrics_data.append([f"{metric}.{sub_metric}", str(sub_value)])
+                else:
+                    metrics_data.append([metric, str(value)])
+
+            metrics_table = Table(metrics_data, colWidths=[3*inch, 3*inch])
+            metrics_table.setStyle(TableStyle([
+                ('BACKGROUND', (0, 0), (-1, 0), colors.darkblue),
+                ('TEXTCOLOR', (0, 0), (-1, 0), colors.whitesmoke),
+                ('ALIGN', (0, 0), (-1, -1), 'LEFT'),
+                ('FONTNAME', (0, 0), (-1, 0), 'Helvetica-Bold'),
+                ('FONTSIZE', (0, 0), (-1, 0), 12),
+                ('BOTTOMPADDING', (0, 0), (-1, 0), 12),
+                ('BACKGROUND', (0, 1), (-1, -1), colors.lightgrey),
+                ('ALTERNATEROWCOLORS', (0, 1), (-1, -1), [colors.lightgrey, colors.white]),
+                ('GRID', (0, 0), (-1, -1), 1, colors.black)
+            ]))
+
+            story.append(metrics_table)
+
+        doc.build(story)
+        filename = f"{report.name}_{report.type}_report.pdf"
+
+        return buffer.getvalue(), 'application/pdf', filename

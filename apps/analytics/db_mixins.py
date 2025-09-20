@@ -225,3 +225,32 @@ class CacheableMixin:
 
         cache_key = self.get_instance_cache_key()
         cache.delete(cache_key)
+
+
+class ServerlessViewMixin:
+    """
+    Mixin for views to optimize for serverless environments
+    """
+
+    def get_queryset(self):
+        """
+        Override to add common optimizations for serverless
+        """
+        if hasattr(super(), 'get_queryset'):
+            queryset = super().get_queryset()
+            # Add common optimizations like select_related, prefetch_related
+            return queryset
+        return None
+
+    def dispatch(self, request, *args, **kwargs):
+        """
+        Override dispatch to add connection management for serverless
+        """
+        try:
+            response = super().dispatch(request, *args, **kwargs)
+            return response
+        finally:
+            # Ensure database connections are closed properly in serverless
+            from django.db import connections
+            for conn in connections.all():
+                conn.close()

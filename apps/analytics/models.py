@@ -423,3 +423,185 @@ class AlertRule(RetryableModelMixin, TimestampMixin, models.Model):
     @atomic_with_retry()
     def save(self, *args, **kwargs):
         super().save(*args, **kwargs)
+
+
+class TimeSeriesData(RetryableModelMixin, models.Model):
+    """
+    Model for storing time series data that was previously stored in InfluxDB.
+    This replaces InfluxDB functionality with PostgreSQL storage.
+    """
+
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+
+    # Measurement identification
+    measurement = models.CharField(max_length=255, help_text="Measurement name (e.g., 'code_commits', 'build_duration')")
+    source = models.CharField(max_length=255, help_text="Data source (e.g., 'github', 'jenkins', 'jira')")
+
+    # Time dimension
+    timestamp = models.DateTimeField(help_text="When the measurement was taken")
+
+    # Value storage
+    value_float = models.FloatField(null=True, blank=True, help_text="Numeric value")
+    value_int = models.BigIntegerField(null=True, blank=True, help_text="Integer value")
+    value_string = models.TextField(null=True, blank=True, help_text="String value")
+    value_bool = models.BooleanField(null=True, blank=True, help_text="Boolean value")
+
+    # Metadata and tags
+    tags = models.JSONField(default=dict, help_text="Tags as key-value pairs (e.g., {'user': 'john', 'repo': 'myproject'})")
+    fields = models.JSONField(default=dict, help_text="Additional field data")
+
+    # Context information
+    user_id = models.CharField(max_length=255, null=True, blank=True, help_text="User ID if applicable")
+    project_id = models.CharField(max_length=255, null=True, blank=True, help_text="Project ID if applicable")
+    team_id = models.CharField(max_length=255, null=True, blank=True, help_text="Team ID if applicable")
+
+    # Tracking
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    objects = RetryableManager()
+
+    class Meta:
+        db_table = get_table_name("time_series_data")
+        ordering = ["-timestamp"]
+        indexes = [
+            models.Index(fields=["measurement", "timestamp"]),
+            models.Index(fields=["source", "timestamp"]),
+            models.Index(fields=["user_id", "timestamp"]),
+            models.Index(fields=["project_id", "timestamp"]),
+            models.Index(fields=["team_id", "timestamp"]),
+            models.Index(fields=["timestamp"]),
+            models.Index(fields=["measurement", "source"]),
+        ]
+
+    def __str__(self):
+        return f"{self.measurement} - {self.source} - {self.timestamp}"
+
+    @property
+    def value(self):
+        """Get the primary value regardless of type"""
+        if self.value_float is not None:
+            return self.value_float
+        elif self.value_int is not None:
+            return self.value_int
+        elif self.value_string is not None:
+            return self.value_string
+        elif self.value_bool is not None:
+            return self.value_bool
+        return None
+
+    @classmethod
+    def write_point(cls, measurement, source, value, timestamp=None, tags=None, fields=None,
+                   user_id=None, project_id=None, team_id=None):
+        """
+        Write a time series data point (replaces InfluxDB write functionality)
+        """
+        if timestamp is None:
+            timestamp = timezone.now()
+
+        data = {
+            'measurement': measurement,
+            'source': source,
+            'timestamp': timestamp,
+            'tags': tags or {},
+            'fields': fields or {},
+            'user_id': user_id,
+            'project_id': project_id,
+            'team_id': team_id,
+        }
+
+        # Set appropriate value field based on type
+        if isinstance(value, float):
+            data['value_float'] = value
+        elif isinstance(value, int):
+            data['value_int'] = value
+        elif isinstance(value, bool):
+            data['value_bool'] = value
+        else:
+            data['value_string'] = str(value)
+
+        return cls.objects.create(**data)
+
+    @classmethod
+    def query_range(cls, measurement, start_time, end_time, source=None, user_id=None,
+                   project_id=None, team_id=None, tags=None):
+        """
+        Query time series data for a time range (replaces InfluxDB query functionality)
+        """
+        queryset = cls.objects.filter(
+            measurement=measurement,
+            timestamp__gte=start_time,
+            timestamp__lte=end_time
+        )
+
+        if source:
+            queryset = queryset.filter(source=source)
+        if user_id:
+            queryset = queryset.filter(user_id=user_id)
+        if project_id:
+            queryset = queryset.filter(project_id=project_id)
+        if team_id:
+            queryset = queryset.filter(team_id=team_id)
+
+        # Filter by tags if provided
+        if tags:
+            for key, value in tags.items():
+                queryset = queryset.filter(tags__contains={key: value})
+
+        return queryset.order_by('timestamp')
+
+
+class MetricSnapshot(RetryableModelMixin, models.Model):
+    """
+    Model for storing periodic snapshots of calculated metrics.
+    This provides efficient querying for dashboard and reporting.
+    """
+
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+
+    # Metric identification
+    metric_definition = models.ForeignKey(
+        MetricDefinition,
+        on_delete=models.CASCADE,
+        related_name='snapshots'
+    )
+
+    # Snapshot metadata
+    snapshot_time = models.DateTimeField(help_text="When this snapshot was taken")
+    period_start = models.DateTimeField(help_text="Start of the measurement period")
+    period_end = models.DateTimeField(help_text="End of the measurement period")
+
+    # Calculated values
+    value = models.DecimalField(max_digits=20, decimal_places=6, help_text="Calculated metric value")
+    raw_data_count = models.IntegerField(help_text="Number of data points used in calculation")
+
+    # Context
+    user_id = models.CharField(max_length=255, null=True, blank=True)
+    project_id = models.CharField(max_length=255, null=True, blank=True)
+    team_id = models.CharField(max_length=255, null=True, blank=True)
+
+    # Additional metadata
+    calculation_metadata = models.JSONField(default=dict, help_text="Additional calculation details")
+    confidence_score = models.FloatField(null=True, blank=True, help_text="Confidence in the calculation (0-1)")
+
+    # Tracking
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    objects = RetryableManager()
+
+    class Meta:
+        db_table = get_table_name("metric_snapshots")
+        ordering = ["-snapshot_time"]
+        indexes = [
+            models.Index(fields=["metric_definition", "snapshot_time"]),
+            models.Index(fields=["user_id", "snapshot_time"]),
+            models.Index(fields=["project_id", "snapshot_time"]),
+            models.Index(fields=["team_id", "snapshot_time"]),
+            models.Index(fields=["period_start", "period_end"]),
+        ]
+        unique_together = [
+            ["metric_definition", "snapshot_time", "user_id", "project_id", "team_id"]
+        ]
+
+    def __str__(self):
+        return f"{self.metric_definition.name} - {self.snapshot_time} - {self.value}"

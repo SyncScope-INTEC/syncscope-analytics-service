@@ -17,7 +17,7 @@ from .data_analysis import (
     StatisticalAnalyzer, TrendAnalyzer, ProductivityAnalyzer,
     DataFrameProcessor, TimeSeriesAnalyzer
 )
-from .influxdb_client import influxdb_manager
+from .models import TimeSeriesData, MetricSnapshot, MetricDefinition
 from .service_integration import MonitoringServiceClient, ManagementServiceClient
 
 logger = logging.getLogger(__name__)
@@ -434,7 +434,7 @@ class PerformanceMetricCalculator(BaseMetricCalculator):
             start_date = context.get('start_date', timezone.now() - timedelta(days=30))
             end_date = context.get('end_date', timezone.now())
 
-            # Get performance data from InfluxDB
+            # Get performance data from PostgreSQL
             performance_data = self._get_performance_data(context, start_date, end_date)
 
             method = self.metric_definition.calculation_method
@@ -453,15 +453,30 @@ class PerformanceMetricCalculator(BaseMetricCalculator):
             return {"error": str(e)}
 
     def _get_performance_data(self, context: Dict[str, Any], start_date: datetime, end_date: datetime) -> List[Dict]:
-        """Get performance data from InfluxDB"""
+        """Get performance data from PostgreSQL TimeSeriesData"""
         try:
-            query = 'filter(fn: (r) => r._measurement == "system_performance")'
+            queryset = TimeSeriesData.query_range(
+                measurement="system_performance",
+                start_time=start_date,
+                end_time=end_date
+            )
 
             # Add context filters
             if context.get('service_name'):
-                query += f' |> filter(fn: (r) => r.service == "{context["service_name"]}")'
+                queryset = queryset.filter(tags__contains={'service': context['service_name']})
 
-            return influxdb_manager.query_metrics(query, start_date, end_date)
+            # Convert to list of dictionaries for compatibility
+            results = []
+            for data_point in queryset:
+                results.append({
+                    'timestamp': data_point.timestamp,
+                    'value': data_point.value,
+                    'tags': data_point.tags,
+                    'fields': data_point.fields,
+                    'source': data_point.source
+                })
+
+            return results
         except Exception as e:
             logger.error(f"Error getting performance data: {e}")
             return []
@@ -597,3 +612,43 @@ class MetricCalculationService:
             results.append(result)
 
         return results
+
+
+class MetricCalculatorRegistry:
+    """Registry for metric calculators"""
+
+    def __init__(self):
+        self._calculators = {
+            "productivity": "productivity",
+            "code_quality": "code_quality",
+            "team_collaboration": "team_collaboration",
+            "performance": "performance",
+            "security": "security",
+            "efficiency": "efficiency",
+            "engagement": "engagement",
+            "learning": "learning",
+            "deployment": "deployment",
+            "innovation": "innovation",
+        }
+
+    def get_calculator(self, metric_type: str):
+        """Get calculator by type"""
+        if metric_type in self._calculators:
+            # Create mock metric definition for the calculator
+            from .models import MetricDefinition
+            mock_definition = type('MockMetricDefinition', (), {
+                'calculation_method': metric_type,
+                'parameters': {},
+                'id': None,
+                'name': metric_type
+            })()
+            return MetricCalculatorFactory.create_calculator(mock_definition)
+        return None
+
+    def get_calculator_by_name(self, metric_name: str):
+        """Get calculator by metric name (alias for type)"""
+        return self.get_calculator(metric_name)
+
+    def list_calculators(self) -> List[str]:
+        """List available calculator types"""
+        return list(self._calculators.keys())

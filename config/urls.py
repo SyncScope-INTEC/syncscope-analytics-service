@@ -14,7 +14,7 @@ urlpatterns = [
     # Home page
     path("", api_home, name="api_home"),
     path("admin/", admin.site.urls),
-    path("api/", include("apps.analytics.urls")),
+    path("analytics/", include("apps.analytics.urls")),
     # Root health check
     path("health/", health_check, name="root_health_check"),
     # API Documentation
