@@ -4,12 +4,14 @@ GitHub Issue #3: Configurar pandas/numpy para análisis
 """
 
 import logging
-import numpy as np
-import pandas as pd
 from datetime import datetime, timedelta
 from decimal import Decimal
-from typing import Dict, List, Optional, Union, Any
+from typing import Any, Dict, List, Optional, Union
+
 from django.conf import settings
+
+import numpy as np
+import pandas as pd
 
 logger = logging.getLogger(__name__)
 
@@ -20,7 +22,9 @@ class DataFrameProcessor:
     """
 
     @staticmethod
-    def create_dataframe(data: List[Dict], index_col: Optional[str] = None) -> pd.DataFrame:
+    def create_dataframe(
+        data: List[Dict], index_col: Optional[str] = None
+    ) -> pd.DataFrame:
         """
         Create a pandas DataFrame from a list of dictionaries
         """
@@ -34,7 +38,9 @@ class DataFrameProcessor:
             return pd.DataFrame()
 
     @staticmethod
-    def clean_data(df: pd.DataFrame, drop_na: bool = True, fill_na_value: Any = 0) -> pd.DataFrame:
+    def clean_data(
+        df: pd.DataFrame, drop_na: bool = True, fill_na_value: Any = 0
+    ) -> pd.DataFrame:
         """
         Clean DataFrame by handling missing values
         """
@@ -49,7 +55,9 @@ class DataFrameProcessor:
             return df
 
     @staticmethod
-    def filter_by_date_range(df: pd.DataFrame, date_col: str, start_date: datetime, end_date: datetime) -> pd.DataFrame:
+    def filter_by_date_range(
+        df: pd.DataFrame, date_col: str, start_date: datetime, end_date: datetime
+    ) -> pd.DataFrame:
         """
         Filter DataFrame by date range
         """
@@ -61,7 +69,9 @@ class DataFrameProcessor:
             return df
 
     @staticmethod
-    def group_by_period(df: pd.DataFrame, date_col: str, period: str = 'D') -> pd.DataFrame:
+    def group_by_period(
+        df: pd.DataFrame, date_col: str, period: str = "D"
+    ) -> pd.DataFrame:
         """
         Group data by time period (D=daily, W=weekly, M=monthly)
         """
@@ -88,22 +98,24 @@ class StatisticalAnalyzer:
             series = pd.Series(data) if isinstance(data, list) else data
 
             return {
-                'count': len(series),
-                'mean': float(series.mean()),
-                'median': float(series.median()),
-                'std': float(series.std()),
-                'min': float(series.min()),
-                'max': float(series.max()),
-                'q25': float(series.quantile(0.25)),
-                'q75': float(series.quantile(0.75)),
-                'sum': float(series.sum())
+                "count": len(series),
+                "mean": float(series.mean()),
+                "median": float(series.median()),
+                "std": float(series.std()),
+                "min": float(series.min()),
+                "max": float(series.max()),
+                "q25": float(series.quantile(0.25)),
+                "q75": float(series.quantile(0.75)),
+                "sum": float(series.sum()),
             }
         except Exception as e:
             logger.error(f"Error calculating basic stats: {e}")
             return {}
 
     @staticmethod
-    def calculate_percentage_change(current_value: float, previous_value: float) -> float:
+    def calculate_percentage_change(
+        current_value: float, previous_value: float
+    ) -> float:
         """
         Calculate percentage change between two values
         """
@@ -116,7 +128,9 @@ class StatisticalAnalyzer:
             return 0.0
 
     @staticmethod
-    def calculate_moving_average(data: Union[List, pd.Series], window: int = 7) -> pd.Series:
+    def calculate_moving_average(
+        data: Union[List, pd.Series], window: int = 7
+    ) -> pd.Series:
         """
         Calculate moving average
         """
@@ -128,7 +142,9 @@ class StatisticalAnalyzer:
             return pd.Series()
 
     @staticmethod
-    def detect_anomalies(data: Union[List, pd.Series], threshold: float = 2.0) -> List[int]:
+    def detect_anomalies(
+        data: Union[List, pd.Series], threshold: float = 2.0
+    ) -> List[int]:
         """
         Detect anomalies using standard deviation method
         """
@@ -149,7 +165,9 @@ class StatisticalAnalyzer:
             return []
 
     @staticmethod
-    def calculate_correlation(x: Union[List, pd.Series], y: Union[List, pd.Series]) -> float:
+    def calculate_correlation(
+        x: Union[List, pd.Series], y: Union[List, pd.Series]
+    ) -> float:
         """
         Calculate correlation coefficient between two variables
         """
@@ -169,7 +187,9 @@ class TrendAnalyzer:
     """
 
     @staticmethod
-    def calculate_trend(data: Union[List, pd.Series], periods: int = None) -> Dict[str, Any]:
+    def calculate_trend(
+        data: Union[List, pd.Series], periods: int = None
+    ) -> Dict[str, Any]:
         """
         Calculate trend direction and strength
         """
@@ -177,7 +197,7 @@ class TrendAnalyzer:
             series = pd.Series(data) if isinstance(data, list) else data
 
             if len(series) < 2:
-                return {'direction': 'insufficient_data', 'strength': 0, 'slope': 0}
+                return {"direction": "insufficient_data", "strength": 0, "slope": 0}
 
             # Calculate linear trend using least squares
             x = np.arange(len(series))
@@ -185,11 +205,11 @@ class TrendAnalyzer:
 
             # Determine trend direction
             if abs(slope) < 0.01:
-                direction = 'stable'
+                direction = "stable"
             elif slope > 0:
-                direction = 'increasing'
+                direction = "increasing"
             else:
-                direction = 'decreasing'
+                direction = "decreasing"
 
             # Calculate R-squared to measure trend strength
             y_pred = slope * x + intercept
@@ -198,14 +218,14 @@ class TrendAnalyzer:
             r_squared = 1 - (ss_res / ss_tot) if ss_tot != 0 else 0
 
             return {
-                'direction': direction,
-                'strength': float(r_squared),
-                'slope': float(slope),
-                'intercept': float(intercept)
+                "direction": direction,
+                "strength": float(r_squared),
+                "slope": float(slope),
+                "intercept": float(intercept),
             }
         except Exception as e:
             logger.error(f"Error calculating trend: {e}")
-            return {'direction': 'error', 'strength': 0, 'slope': 0}
+            return {"direction": "error", "strength": 0, "slope": 0}
 
     @staticmethod
     def forecast_simple(data: Union[List, pd.Series], periods: int = 7) -> List[float]:
@@ -216,7 +236,9 @@ class TrendAnalyzer:
             series = pd.Series(data) if isinstance(data, list) else data
 
             if len(series) < 2:
-                return [series.iloc[-1]] * periods if len(series) == 1 else [0.0] * periods
+                return (
+                    [series.iloc[-1]] * periods if len(series) == 1 else [0.0] * periods
+                )
 
             # Calculate linear trend
             x = np.arange(len(series))
@@ -238,13 +260,19 @@ class ProductivityAnalyzer:
     """
 
     @staticmethod
-    def calculate_velocity(commits_per_day: List[int], window_days: int = 7) -> Dict[str, float]:
+    def calculate_velocity(
+        commits_per_day: List[int], window_days: int = 7
+    ) -> Dict[str, float]:
         """
         Calculate development velocity metrics
         """
         try:
             if not commits_per_day:
-                return {'current_velocity': 0, 'average_velocity': 0, 'velocity_trend': 0}
+                return {
+                    "current_velocity": 0,
+                    "average_velocity": 0,
+                    "velocity_trend": 0,
+                }
 
             series = pd.Series(commits_per_day)
 
@@ -257,22 +285,26 @@ class ProductivityAnalyzer:
             # Velocity trend (comparing recent vs previous periods)
             if len(series) >= window_days * 2:
                 recent_avg = series.tail(window_days).mean()
-                previous_avg = series.iloc[-window_days*2:-window_days].mean()
-                velocity_trend = StatisticalAnalyzer.calculate_percentage_change(recent_avg, previous_avg)
+                previous_avg = series.iloc[-window_days * 2 : -window_days].mean()
+                velocity_trend = StatisticalAnalyzer.calculate_percentage_change(
+                    recent_avg, previous_avg
+                )
             else:
                 velocity_trend = 0
 
             return {
-                'current_velocity': float(current_velocity),
-                'average_velocity': float(average_velocity),
-                'velocity_trend': float(velocity_trend)
+                "current_velocity": float(current_velocity),
+                "average_velocity": float(average_velocity),
+                "velocity_trend": float(velocity_trend),
             }
         except Exception as e:
             logger.error(f"Error calculating velocity: {e}")
-            return {'current_velocity': 0, 'average_velocity': 0, 'velocity_trend': 0}
+            return {"current_velocity": 0, "average_velocity": 0, "velocity_trend": 0}
 
     @staticmethod
-    def analyze_code_quality_trend(quality_scores: List[float], timestamps: List[datetime]) -> Dict[str, Any]:
+    def analyze_code_quality_trend(
+        quality_scores: List[float], timestamps: List[datetime]
+    ) -> Dict[str, Any]:
         """
         Analyze code quality trends over time
         """
@@ -280,16 +312,15 @@ class ProductivityAnalyzer:
             if len(quality_scores) != len(timestamps):
                 raise ValueError("Scores and timestamps must have same length")
 
-            df = pd.DataFrame({
-                'timestamp': timestamps,
-                'quality_score': quality_scores
-            })
+            df = pd.DataFrame(
+                {"timestamp": timestamps, "quality_score": quality_scores}
+            )
 
-            df['timestamp'] = pd.to_datetime(df['timestamp'])
-            df = df.sort_values('timestamp')
+            df["timestamp"] = pd.to_datetime(df["timestamp"])
+            df = df.sort_values("timestamp")
 
             # Calculate trend
-            trend = TrendAnalyzer.calculate_trend(df['quality_score'])
+            trend = TrendAnalyzer.calculate_trend(df["quality_score"])
 
             # Calculate quality metrics
             current_quality = quality_scores[-1] if quality_scores else 0
@@ -299,11 +330,11 @@ class ProductivityAnalyzer:
             anomalies = StatisticalAnalyzer.detect_anomalies(quality_scores)
 
             return {
-                'current_quality': float(current_quality),
-                'average_quality': float(average_quality),
-                'trend': trend,
-                'anomaly_count': len(anomalies),
-                'anomaly_indices': anomalies
+                "current_quality": float(current_quality),
+                "average_quality": float(average_quality),
+                "trend": trend,
+                "anomaly_count": len(anomalies),
+                "anomaly_indices": anomalies,
             }
         except Exception as e:
             logger.error(f"Error analyzing code quality trend: {e}")
@@ -321,14 +352,14 @@ class ProductivityAnalyzer:
             df = pd.DataFrame(interaction_data)
 
             # Expected columns: 'user_a', 'user_b', 'interaction_count', 'interaction_type'
-            required_columns = ['user_a', 'user_b', 'interaction_count']
+            required_columns = ["user_a", "user_b", "interaction_count"]
             if not all(col in df.columns for col in required_columns):
                 logger.warning("Missing required columns for collaboration score")
                 return 0.0
 
             # Calculate unique interactions
-            unique_pairs = len(df[['user_a', 'user_b']].drop_duplicates())
-            total_interactions = df['interaction_count'].sum()
+            unique_pairs = len(df[["user_a", "user_b"]].drop_duplicates())
+            total_interactions = df["interaction_count"].sum()
 
             # Simple collaboration score (can be enhanced)
             if unique_pairs == 0:
@@ -348,7 +379,9 @@ class TimeSeriesAnalyzer:
     """
 
     @staticmethod
-    def resample_timeseries(df: pd.DataFrame, timestamp_col: str, value_col: str, frequency: str = 'D') -> pd.DataFrame:
+    def resample_timeseries(
+        df: pd.DataFrame, timestamp_col: str, value_col: str, frequency: str = "D"
+    ) -> pd.DataFrame:
         """
         Resample time series data to different frequency
         """
@@ -362,7 +395,9 @@ class TimeSeriesAnalyzer:
             return pd.DataFrame()
 
     @staticmethod
-    def calculate_seasonality(data: Union[List, pd.Series], period: int = 7) -> Dict[str, Any]:
+    def calculate_seasonality(
+        data: Union[List, pd.Series], period: int = 7
+    ) -> Dict[str, Any]:
         """
         Detect seasonality patterns in time series data
         """
@@ -370,7 +405,7 @@ class TimeSeriesAnalyzer:
             series = pd.Series(data) if isinstance(data, list) else data
 
             if len(series) < period * 2:
-                return {'has_seasonality': False, 'seasonal_strength': 0}
+                return {"has_seasonality": False, "seasonal_strength": 0}
 
             # Simple seasonality detection using autocorrelation
             autocorr = series.autocorr(lag=period)
@@ -380,13 +415,13 @@ class TimeSeriesAnalyzer:
             seasonal_strength = abs(autocorr)
 
             return {
-                'has_seasonality': has_seasonality,
-                'seasonal_strength': float(seasonal_strength),
-                'period': period
+                "has_seasonality": has_seasonality,
+                "seasonal_strength": float(seasonal_strength),
+                "period": period,
             }
         except Exception as e:
             logger.error(f"Error calculating seasonality: {e}")
-            return {'has_seasonality': False, 'seasonal_strength': 0}
+            return {"has_seasonality": False, "seasonal_strength": 0}
 
 
 def optimize_dataframe_memory(df: pd.DataFrame) -> pd.DataFrame:
@@ -397,22 +432,299 @@ def optimize_dataframe_memory(df: pd.DataFrame) -> pd.DataFrame:
         for col in df.columns:
             col_type = df[col].dtype
 
-            if col_type != 'object':
+            if col_type != "object":
                 c_min = df[col].min()
                 c_max = df[col].max()
 
-                if str(col_type)[:3] == 'int':
+                if str(col_type)[:3] == "int":
                     if c_min > np.iinfo(np.int8).min and c_max < np.iinfo(np.int8).max:
                         df[col] = df[col].astype(np.int8)
-                    elif c_min > np.iinfo(np.int16).min and c_max < np.iinfo(np.int16).max:
+                    elif (
+                        c_min > np.iinfo(np.int16).min
+                        and c_max < np.iinfo(np.int16).max
+                    ):
                         df[col] = df[col].astype(np.int16)
-                    elif c_min > np.iinfo(np.int32).min and c_max < np.iinfo(np.int32).max:
+                    elif (
+                        c_min > np.iinfo(np.int32).min
+                        and c_max < np.iinfo(np.int32).max
+                    ):
                         df[col] = df[col].astype(np.int32)
                 else:
-                    if c_min > np.finfo(np.float32).min and c_max < np.finfo(np.float32).max:
+                    if (
+                        c_min > np.finfo(np.float32).min
+                        and c_max < np.finfo(np.float32).max
+                    ):
                         df[col] = df[col].astype(np.float32)
 
         return df
     except Exception as e:
         logger.error(f"Error optimizing DataFrame memory: {e}")
         return df
+
+
+class ReportGenerator:
+    """
+    Report generation and export utilities
+    """
+
+    def __init__(self):
+        self.data_analyzer = DataAnalyzer()
+
+    def export_report(
+        self,
+        report,
+        export_format: str,
+        include_charts: bool = True,
+        detailed: bool = False,
+    ):
+        """
+        Export report in specified format
+
+        Args:
+            report: Report model instance
+            export_format: Format (pdf, excel, csv, json)
+            include_charts: Include visualizations
+            detailed: Include detailed breakdown
+
+        Returns:
+            Tuple of (file_content, content_type, filename)
+        """
+        try:
+            if export_format == "json":
+                return self._export_json(report, detailed)
+            elif export_format == "csv":
+                return self._export_csv(report, detailed)
+            elif export_format == "excel":
+                return self._export_excel(report, include_charts, detailed)
+            elif export_format == "pdf":
+                return self._export_pdf(report, include_charts, detailed)
+            else:
+                raise ValueError(f"Unsupported export format: {export_format}")
+
+        except Exception as e:
+            logger.error(f"Error exporting report {report.id}: {e}")
+            raise
+
+    def _export_json(self, report, detailed: bool):
+        """Export report as JSON"""
+        import json
+
+        data = {
+            "report_id": str(report.id),
+            "name": report.name,
+            "type": report.type,
+            "generated_at": (
+                report.generated_at.isoformat() if report.generated_at else None
+            ),
+            "data": report.data,
+        }
+
+        if detailed and report.config:
+            data["config"] = report.config
+
+        content = json.dumps(data, indent=2, default=str)
+        filename = f"{report.name}_{report.type}_report.json"
+
+        return content.encode("utf-8"), "application/json", filename
+
+    def _export_csv(self, report, detailed: bool):
+        """Export report as CSV"""
+        import csv
+        import io
+
+        output = io.StringIO()
+        writer = csv.writer(output)
+
+        # Write header information
+        writer.writerow(["Report Name", report.name])
+        writer.writerow(["Report Type", report.type])
+        writer.writerow(
+            [
+                "Generated At",
+                report.generated_at.isoformat() if report.generated_at else "N/A",
+            ]
+        )
+        writer.writerow([])  # Empty row
+
+        # Write data
+        if report.data and isinstance(report.data, dict):
+            if "metrics" in report.data:
+                writer.writerow(["Metric", "Value", "Unit"])
+                for metric, value in report.data["metrics"].items():
+                    if isinstance(value, dict):
+                        for sub_metric, sub_value in value.items():
+                            writer.writerow([f"{metric}.{sub_metric}", sub_value, ""])
+                    else:
+                        writer.writerow([metric, value, ""])
+
+        content = output.getvalue()
+        filename = f"{report.name}_{report.type}_report.csv"
+
+        return content.encode("utf-8"), "text/csv", filename
+
+    def _export_excel(self, report, include_charts: bool, detailed: bool):
+        """Export report as Excel"""
+        import io
+
+        import pandas as pd
+
+        output = io.BytesIO()
+
+        # Create Excel writer
+        with pd.ExcelWriter(output, engine="openpyxl") as writer:
+            # Summary sheet
+            summary_data = {
+                "Report Information": [
+                    "Report Name",
+                    "Report Type",
+                    "Generated At",
+                    "Status",
+                ],
+                "Values": [
+                    report.name,
+                    report.type,
+                    report.generated_at.isoformat() if report.generated_at else "N/A",
+                    report.status,
+                ],
+            }
+
+            summary_df = pd.DataFrame(summary_data)
+            summary_df.to_excel(writer, sheet_name="Summary", index=False)
+
+            # Data sheet
+            if report.data and isinstance(report.data, dict):
+                if "metrics" in report.data:
+                    metrics_data = []
+                    for metric, value in report.data["metrics"].items():
+                        if isinstance(value, dict):
+                            for sub_metric, sub_value in value.items():
+                                metrics_data.append(
+                                    {
+                                        "Metric": f"{metric}.{sub_metric}",
+                                        "Value": sub_value,
+                                    }
+                                )
+                        else:
+                            metrics_data.append({"Metric": metric, "Value": value})
+
+                    if metrics_data:
+                        metrics_df = pd.DataFrame(metrics_data)
+                        metrics_df.to_excel(writer, sheet_name="Metrics", index=False)
+
+        filename = f"{report.name}_{report.type}_report.xlsx"
+
+        return (
+            output.getvalue(),
+            "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+            filename,
+        )
+
+    def _export_pdf(self, report, include_charts: bool, detailed: bool):
+        """Export report as PDF"""
+        import io
+
+        from reportlab.lib import colors
+        from reportlab.lib.pagesizes import letter
+        from reportlab.lib.styles import ParagraphStyle, getSampleStyleSheet
+        from reportlab.lib.units import inch
+        from reportlab.platypus import (
+            Paragraph,
+            SimpleDocTemplate,
+            Spacer,
+            Table,
+            TableStyle,
+        )
+
+        buffer = io.BytesIO()
+        doc = SimpleDocTemplate(buffer, pagesize=letter)
+        styles = getSampleStyleSheet()
+        story = []
+
+        # Title
+        title_style = ParagraphStyle(
+            "CustomTitle",
+            parent=styles["Heading1"],
+            fontSize=24,
+            spaceAfter=30,
+            textColor=colors.darkblue,
+        )
+        story.append(
+            Paragraph(f"{report.name} - {report.type.title()} Report", title_style)
+        )
+        story.append(Spacer(1, 12))
+
+        # Report Information
+        info_data = [
+            ["Report Information", ""],
+            [
+                "Generated At",
+                (
+                    report.generated_at.strftime("%Y-%m-%d %H:%M:%S")
+                    if report.generated_at
+                    else "N/A"
+                ),
+            ],
+            ["Status", report.status.title()],
+            ["Type", report.type.title()],
+        ]
+
+        info_table = Table(info_data, colWidths=[2 * inch, 4 * inch])
+        info_table.setStyle(
+            TableStyle(
+                [
+                    ("BACKGROUND", (0, 0), (-1, 0), colors.grey),
+                    ("TEXTCOLOR", (0, 0), (-1, 0), colors.whitesmoke),
+                    ("ALIGN", (0, 0), (-1, -1), "LEFT"),
+                    ("FONTNAME", (0, 0), (-1, 0), "Helvetica-Bold"),
+                    ("FONTSIZE", (0, 0), (-1, 0), 14),
+                    ("BOTTOMPADDING", (0, 0), (-1, 0), 12),
+                    ("BACKGROUND", (0, 1), (-1, -1), colors.beige),
+                    ("GRID", (0, 0), (-1, -1), 1, colors.black),
+                ]
+            )
+        )
+
+        story.append(info_table)
+        story.append(Spacer(1, 20))
+
+        # Metrics data
+        if report.data and isinstance(report.data, dict) and "metrics" in report.data:
+            story.append(Paragraph("Metrics", styles["Heading2"]))
+            story.append(Spacer(1, 12))
+
+            metrics_data = [["Metric", "Value"]]
+            for metric, value in report.data["metrics"].items():
+                if isinstance(value, dict):
+                    for sub_metric, sub_value in value.items():
+                        metrics_data.append([f"{metric}.{sub_metric}", str(sub_value)])
+                else:
+                    metrics_data.append([metric, str(value)])
+
+            metrics_table = Table(metrics_data, colWidths=[3 * inch, 3 * inch])
+            metrics_table.setStyle(
+                TableStyle(
+                    [
+                        ("BACKGROUND", (0, 0), (-1, 0), colors.darkblue),
+                        ("TEXTCOLOR", (0, 0), (-1, 0), colors.whitesmoke),
+                        ("ALIGN", (0, 0), (-1, -1), "LEFT"),
+                        ("FONTNAME", (0, 0), (-1, 0), "Helvetica-Bold"),
+                        ("FONTSIZE", (0, 0), (-1, 0), 12),
+                        ("BOTTOMPADDING", (0, 0), (-1, 0), 12),
+                        ("BACKGROUND", (0, 1), (-1, -1), colors.lightgrey),
+                        (
+                            "ALTERNATEROWCOLORS",
+                            (0, 1),
+                            (-1, -1),
+                            [colors.lightgrey, colors.white],
+                        ),
+                        ("GRID", (0, 0), (-1, -1), 1, colors.black),
+                    ]
+                )
+            )
+
+            story.append(metrics_table)
+
+        doc.build(story)
+        filename = f"{report.name}_{report.type}_report.pdf"
+
+        return buffer.getvalue(), "application/pdf", filename

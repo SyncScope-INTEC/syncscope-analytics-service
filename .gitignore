@@ -205,3 +205,14 @@ cython_debug/
 marimo/_static/
 marimo/_lsp/
 __marimo__/
+staticfiles/
+
+# Environment variables
+.env.*
+.vscode/
+*.env
+.*.env
+.dev.env
+.staging.env
+.prod.env
+.qa.env
