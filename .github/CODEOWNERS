@@ -1,0 +1,43 @@
+# CODEOWNERS file for SyncScope Analytics Service
+# This file defines code ownership for automatic review assignments
+
+# Global default owners (fallback for any files not specified below)
+* @AlejandroBeltre
+
+# Production branch protection - requires manual approval
+# All changes to production-related files require owner approval
+/prod/* @AlejandroBeltre
+/production/* @AlejandroBeltre
+
+# Critical configuration files
+/.env* @AlejandroBeltre
+/config/settings.py @AlejandroBeltre
+/Dockerfile @AlejandroBeltre
+/docker-compose*.yml @AlejandroBeltre
+/requirements.txt @AlejandroBeltre
+/pyproject.toml @AlejandroBeltre
+
+# Database migrations (require careful review)
+/apps/*/migrations/ @AlejandroBeltre
+
+# GitHub workflows and settings
+/.github/ @AlejandroBeltre
+
+# Analytics-specific critical files
+/apps/analytics/models.py @AlejandroBeltre
+/apps/analytics/metric_calculators.py @AlejandroBeltre
+/apps/analytics/data_analysis.py @AlejandroBeltre
+/apps/analytics/influxdb_client.py @AlejandroBeltre
+/apps/analytics/service_integration.py @AlejandroBeltre
+
+# Security-related files
+/apps/analytics/middleware.py @AlejandroBeltre
+/apps/analytics/authentication.py @AlejandroBeltre
+
+# Infrastructure and deployment
+/start.sh @AlejandroBeltre
+/gunicorn.conf.py @AlejandroBeltre
+/healthcheck.py @AlejandroBeltre
+
+# Documentation that affects deployment
+/README.md @AlejandroBeltre
