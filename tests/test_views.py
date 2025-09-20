@@ -388,7 +388,7 @@ class TestMetricDefinitionViewSet:
 
         data = response.json()
         assert data["name"] == "new_metric"
-        assert data["calculation_method"] == "AVERAGE"
+        assert data["calculation_method"] == "avg"
 
     def test_retrieve_metric_definition(self, client, user, metric_definition):
         """Test retrieving a specific metric definition."""
