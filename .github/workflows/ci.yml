@@ -95,20 +95,15 @@ jobs:
           JWT_SECRET_KEY: "test-jwt-secret"
           ALLOWED_HOSTS: "localhost,127.0.0.1"
           CORS_ALLOWED_ORIGINS: "http://localhost:3000"
-          # Service URLs for testing
           AUTH_SERVICE_URL: "http://localhost:8001"
           MONITORING_SERVICE_URL: "http://localhost:8002"
           MANAGEMENT_SERVICE_URL: "http://localhost:8003"
-          # Analytics specific settings
           ENABLE_ML_PREDICTIONS: "False"
           CACHE_TIMEOUT: "60"
           MAX_REPORT_SIZE: "1000"
         run: |
-          # Set up database for CI with enhanced error handling
-          python manage.py migrate --run-syncdb
-
-          # Verify the setup worked
-          python manage.py check
+          python manage.py migrate --settings=config.settings
+          python manage.py check --settings=config.settings
 
       - name: Run linting
         run: |
