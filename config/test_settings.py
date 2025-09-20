@@ -73,6 +73,7 @@ PASSWORD_HASHERS = [
     "django.contrib.auth.hashers.MD5PasswordHasher",
 ]
 
+
 # Disable migrations for faster test runs (but keep database creation)
 class DisableMigrations:
     def __contains__(self, item):
@@ -81,8 +82,10 @@ class DisableMigrations:
     def __getitem__(self, item):
         return None
 
+
 # Only disable migrations if we're not in CI (to ensure tables are created properly in CI)
 import os
+
 if not os.environ.get("GITHUB_ACTIONS"):
     MIGRATION_MODULES = DisableMigrations()
 else:
