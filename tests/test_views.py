@@ -1,18 +1,18 @@
 import json
-import pytest
 from datetime import datetime, timedelta
-from unittest.mock import patch, MagicMock
+from unittest.mock import MagicMock, patch
 
+from django.contrib.auth import get_user_model
 from django.test import TestCase
 from django.urls import reverse
 from django.utils import timezone
-from django.contrib.auth import get_user_model
 
+import pytest
 from rest_framework import status
-from rest_framework.test import APITestCase, APIClient
+from rest_framework.test import APIClient, APITestCase
 
-from apps.analytics.models import Report, MetricDefinition, AnalyticsCache
-from apps.analytics.views import ReportViewSet, MetricDefinitionViewSet
+from apps.analytics.models import AnalyticsCache, MetricDefinition, Report
+from apps.analytics.views import MetricDefinitionViewSet, ReportViewSet
 
 User = get_user_model()
 
@@ -44,7 +44,13 @@ class TestApiHomeView:
         response = client.get("/?format=json")
         data = response.json()
 
-        expected_routes = ["API Documentation", "ReDoc Documentation", "OpenAPI Schema", "Admin Interface", "Health Check"]
+        expected_routes = [
+            "API Documentation",
+            "ReDoc Documentation",
+            "OpenAPI Schema",
+            "Admin Interface",
+            "Health Check",
+        ]
         route_titles = [route["title"] for route in data["main_routes"]]
 
         for title in expected_routes:
@@ -78,9 +84,7 @@ class TestReportViewSet:
     @pytest.fixture
     def admin_user(self):
         user = User.objects.create_user(
-            username="admin",
-            email="admin@example.com",
-            password="adminpass123"
+            username="admin", email="admin@example.com", password="adminpass123"
         )
         user.role = "admin"
         user.save()
@@ -111,11 +115,11 @@ class TestReportViewSet:
             "report_type": "summary",
             "configuration": {
                 "metrics": [metric_definition.id],
-                "date_range": "last_7_days"
-            }
+                "date_range": "last_7_days",
+            },
         }
 
-        with patch.object(ReportViewSet, '_generate_report_async') as mock_generate:
+        with patch.object(ReportViewSet, "_generate_report_async") as mock_generate:
             response = client.post("/analytics/reports/", report_data, format="json")
 
         assert response.status_code == 201
@@ -130,7 +134,7 @@ class TestReportViewSet:
 
         invalid_data = {
             "name": "",  # Invalid: empty name
-            "report_type": "invalid_type"  # Invalid type
+            "report_type": "invalid_type",  # Invalid type
         }
 
         response = client.post("/analytics/reports/", invalid_data, format="json")
@@ -158,10 +162,12 @@ class TestReportViewSet:
 
         update_data = {
             "name": "Updated Report Name",
-            "description": "Updated description"
+            "description": "Updated description",
         }
 
-        response = client.patch(f"/analytics/reports/{report.id}/", update_data, format="json")
+        response = client.patch(
+            f"/analytics/reports/{report.id}/", update_data, format="json"
+        )
         assert response.status_code == 200
 
         data = response.json()
@@ -177,7 +183,7 @@ class TestReportViewSet:
         # Verify report is deleted
         assert not Report.objects.filter(id=report.id).exists()
 
-    @patch('apps.analytics.views.ReportGenerator')
+    @patch("apps.analytics.views.ReportGenerator")
     def test_export_report_success(self, mock_generator_class, client, user, report):
         """Test successful report export."""
         # Set up mocks
@@ -186,7 +192,7 @@ class TestReportViewSet:
         mock_generator.export_report.return_value = (
             b"fake_file_data",
             "application/pdf",
-            "test_report.pdf"
+            "test_report.pdf",
         )
 
         # Mark report as completed
@@ -195,13 +201,11 @@ class TestReportViewSet:
 
         client.force_authenticate(user=user)
 
-        export_data = {
-            "format": "pdf",
-            "include_charts": True,
-            "detailed": False
-        }
+        export_data = {"format": "pdf", "include_charts": True, "detailed": False}
 
-        response = client.post(f"/analytics/reports/{report.id}/export/", export_data, format="json")
+        response = client.post(
+            f"/analytics/reports/{report.id}/export/", export_data, format="json"
+        )
         assert response.status_code == 200
         assert response["Content-Type"] == "application/pdf"
         assert "attachment" in response["Content-Disposition"]
@@ -210,13 +214,13 @@ class TestReportViewSet:
         """Test exporting report that's not ready."""
         client.force_authenticate(user=user)
 
-        export_data = {
-            "format": "pdf",
-            "include_charts": True,
-            "detailed": False
-        }
+        export_data = {"format": "pdf", "include_charts": True, "detailed": False}
 
-        response = client.post(f"/analytics/reports/{pending_report.id}/export/", export_data, format="json")
+        response = client.post(
+            f"/analytics/reports/{pending_report.id}/export/",
+            export_data,
+            format="json",
+        )
         assert response.status_code == 400
         assert "not ready for export" in response.json()["error"]
 
@@ -230,13 +234,15 @@ class TestReportViewSet:
         export_data = {
             "format": "invalid_format",
             "include_charts": True,
-            "detailed": False
+            "detailed": False,
         }
 
-        response = client.post(f"/analytics/reports/{report.id}/export/", export_data, format="json")
+        response = client.post(
+            f"/analytics/reports/{report.id}/export/", export_data, format="json"
+        )
         assert response.status_code == 400
 
-    @patch.object(ReportViewSet, '_generate_report_async')
+    @patch.object(ReportViewSet, "_generate_report_async")
     def test_regenerate_report(self, mock_generate, client, user, report):
         """Test report regeneration."""
         client.force_authenticate(user=user)
@@ -259,16 +265,14 @@ class TestReportViewSet:
         """Test admin user can see all reports."""
         # Create another report by different user
         other_user = User.objects.create_user(
-            username="other",
-            email="other@example.com",
-            password="otherpass123"
+            username="other", email="other@example.com", password="otherpass123"
         )
         other_report = Report.objects.create(
             name="Other User Report",
             description="Report by other user",
             report_type="summary",
             status="completed",
-            generated_by=other_user
+            generated_by=other_user,
         )
 
         client.force_authenticate(user=admin_user)
@@ -288,7 +292,7 @@ class TestReportViewSet:
             description="Report by admin",
             report_type="summary",
             status="completed",
-            generated_by=admin_user
+            generated_by=admin_user,
         )
 
         client.force_authenticate(user=user)
@@ -325,7 +329,7 @@ class TestMetricDefinitionViewSet:
             name="inactive_metric",
             description="Inactive metric",
             calculation_method="COUNT",
-            is_active=False
+            is_active=False,
         )
 
         client.force_authenticate(user=user)
@@ -347,7 +351,7 @@ class TestMetricDefinitionViewSet:
             "calculation_method": "AVERAGE",
             "category": "performance",
             "unit": "ms",
-            "is_active": True
+            "is_active": True,
         }
 
         response = client.post("/analytics/metrics/", metric_data, format="json")
@@ -373,10 +377,12 @@ class TestMetricDefinitionViewSet:
 
         update_data = {
             "description": "Updated metric description",
-            "unit": "updated_unit"
+            "unit": "updated_unit",
         }
 
-        response = client.patch(f"/analytics/metrics/{metric_definition.id}/", update_data, format="json")
+        response = client.patch(
+            f"/analytics/metrics/{metric_definition.id}/", update_data, format="json"
+        )
         assert response.status_code == 200
 
         data = response.json()
@@ -406,7 +412,7 @@ class TestCalculateMetricView:
     def client(self):
         return APIClient()
 
-    @patch('apps.analytics.views.MetricCalculatorRegistry')
+    @patch("apps.analytics.views.MetricCalculatorRegistry")
     def test_calculate_metric_success(self, mock_registry_class, client, user):
         """Test successful metric calculation."""
         # Set up mocks
@@ -421,10 +427,12 @@ class TestCalculateMetricView:
         metric_data = {
             "metric_name": "test_metric",
             "context": {"user_id": user.id, "date_range": "last_7_days"},
-            "cache_duration": 3600
+            "cache_duration": 3600,
         }
 
-        response = client.post("/analytics/calculate-metric/", metric_data, format="json")
+        response = client.post(
+            "/analytics/calculate-metric/", metric_data, format="json"
+        )
         assert response.status_code == 200
 
         data = response.json()
@@ -432,7 +440,7 @@ class TestCalculateMetricView:
         assert data["result"]["value"] == 42
         assert data["cached"] is False
 
-    @patch('apps.analytics.views.AnalyticsCache.get_cached_data')
+    @patch("apps.analytics.views.AnalyticsCache.get_cached_data")
     def test_calculate_metric_cached_result(self, mock_get_cached, client, user):
         """Test metric calculation with cached result."""
         mock_get_cached.return_value = {"value": 100, "unit": "cached"}
@@ -442,17 +450,19 @@ class TestCalculateMetricView:
         metric_data = {
             "metric_name": "cached_metric",
             "context": {"user_id": user.id},
-            "cache_duration": 3600
+            "cache_duration": 3600,
         }
 
-        response = client.post("/analytics/calculate-metric/", metric_data, format="json")
+        response = client.post(
+            "/analytics/calculate-metric/", metric_data, format="json"
+        )
         assert response.status_code == 200
 
         data = response.json()
         assert data["cached"] is True
         assert data["result"]["value"] == 100
 
-    @patch('apps.analytics.views.MetricCalculatorRegistry')
+    @patch("apps.analytics.views.MetricCalculatorRegistry")
     def test_calculate_metric_not_found(self, mock_registry_class, client, user):
         """Test metric calculation with non-existent metric."""
         mock_registry = MagicMock()
@@ -464,10 +474,12 @@ class TestCalculateMetricView:
         metric_data = {
             "metric_name": "nonexistent_metric",
             "context": {},
-            "cache_duration": 3600
+            "cache_duration": 3600,
         }
 
-        response = client.post("/analytics/calculate-metric/", metric_data, format="json")
+        response = client.post(
+            "/analytics/calculate-metric/", metric_data, format="json"
+        )
         assert response.status_code == 404
         assert "not found" in response.json()["error"]
 
@@ -480,7 +492,9 @@ class TestCalculateMetricView:
             "context": {}
         }
 
-        response = client.post("/analytics/calculate-metric/", invalid_data, format="json")
+        response = client.post(
+            "/analytics/calculate-metric/", invalid_data, format="json"
+        )
         assert response.status_code == 400
 
     def test_calculate_metric_unauthenticated(self, client):
@@ -488,10 +502,12 @@ class TestCalculateMetricView:
         metric_data = {
             "metric_name": "test_metric",
             "context": {},
-            "cache_duration": 3600
+            "cache_duration": 3600,
         }
 
-        response = client.post("/analytics/calculate-metric/", metric_data, format="json")
+        response = client.post(
+            "/analytics/calculate-metric/", metric_data, format="json"
+        )
         assert response.status_code == 401
 
 
@@ -503,7 +519,7 @@ class TestAnalyticsDashboardView:
     def client(self):
         return APIClient()
 
-    @patch('apps.analytics.views.MetricCalculatorRegistry')
+    @patch("apps.analytics.views.MetricCalculatorRegistry")
     def test_analytics_dashboard_success(self, mock_registry_class, client, user):
         """Test successful dashboard data retrieval."""
         # Set up mocks
@@ -545,7 +561,9 @@ class TestAnalyticsDashboardView:
         start_date = "2024-01-01T00:00:00Z"
         end_date = "2024-01-31T23:59:59Z"
 
-        response = client.get(f"/analytics/dashboard/?start_date={start_date}&end_date={end_date}")
+        response = client.get(
+            f"/analytics/dashboard/?start_date={start_date}&end_date={end_date}"
+        )
         assert response.status_code == 200
 
         data = response.json()
@@ -623,12 +641,12 @@ class TestRateLimiting:
             "name": "Rate Limited Report",
             "description": "Testing rate limits",
             "report_type": "summary",
-            "configuration": {"metrics": [metric_definition.id]}
+            "configuration": {"metrics": [metric_definition.id]},
         }
 
         # This test would need to be run with actual rate limiting enabled
         # For now, just verify the endpoint works
-        with patch.object(ReportViewSet, '_generate_report_async'):
+        with patch.object(ReportViewSet, "_generate_report_async"):
             response = client.post("/analytics/reports/", report_data, format="json")
         assert response.status_code == 201
 
@@ -639,11 +657,13 @@ class TestRateLimiting:
         metric_data = {
             "metric_name": "test_metric",
             "context": {"user_id": user.id},
-            "cache_duration": 3600
+            "cache_duration": 3600,
         }
 
         # This test would need to be run with actual rate limiting enabled
         # For now, just verify the endpoint structure
-        response = client.post("/analytics/calculate-metric/", metric_data, format="json")
+        response = client.post(
+            "/analytics/calculate-metric/", metric_data, format="json"
+        )
         # Will return 404 or 500 due to missing metric calculator, but that's expected
         assert response.status_code in [404, 500]

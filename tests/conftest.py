@@ -1,9 +1,16 @@
-import pytest
-from django.contrib.auth import get_user_model
-from django.utils import timezone
 from datetime import datetime, timedelta
 
-from apps.analytics.models import MetricDefinition, Report, AnalyticsCache, TimeSeriesData
+from django.contrib.auth import get_user_model
+from django.utils import timezone
+
+import pytest
+
+from apps.analytics.models import (
+    AnalyticsCache,
+    MetricDefinition,
+    Report,
+    TimeSeriesData,
+)
 
 User = get_user_model()
 
@@ -12,9 +19,7 @@ User = get_user_model()
 def user():
     """Create a test user."""
     return User.objects.create_user(
-        username="testuser",
-        email="test@example.com",
-        password="testpass123"
+        username="testuser", email="test@example.com", password="testpass123"
     )
 
 
@@ -27,7 +32,7 @@ def metric_definition():
         calculation_method="SUM",
         category="performance",
         unit="requests",
-        is_active=True
+        is_active=True,
     )
 
 
@@ -43,7 +48,7 @@ def metric_definition_complex():
         is_active=True,
         aggregation_period="daily",
         filters={"status": "active"},
-        tags={"priority": "high", "team": "analytics"}
+        tags={"priority": "high", "team": "analytics"},
     )
 
 
@@ -56,14 +61,8 @@ def report(user, metric_definition):
         report_type="summary",
         status="completed",
         generated_by=user,
-        configuration={
-            "metrics": [metric_definition.id],
-            "date_range": "last_7_days"
-        },
-        data={
-            "total_requests": 1000,
-            "average_response_time": 250
-        }
+        configuration={"metrics": [metric_definition.id], "date_range": "last_7_days"},
+        data={"total_requests": 1000, "average_response_time": 250},
     )
 
 
@@ -76,7 +75,7 @@ def pending_report(user):
         report_type="detailed",
         status="pending",
         generated_by=user,
-        configuration={"metrics": [], "date_range": "last_30_days"}
+        configuration={"metrics": [], "date_range": "last_30_days"},
     )
 
 
@@ -87,9 +86,9 @@ def analytics_cache():
         cache_key="test_cache_key",
         cache_data={
             "metric_values": [100, 200, 300],
-            "timestamps": ["2024-01-01", "2024-01-02", "2024-01-03"]
+            "timestamps": ["2024-01-01", "2024-01-02", "2024-01-03"],
         },
-        expires_at=timezone.now() + timedelta(hours=1)
+        expires_at=timezone.now() + timedelta(hours=1),
     )
 
 
@@ -99,7 +98,7 @@ def expired_cache():
     return AnalyticsCache.objects.create(
         cache_key="expired_cache_key",
         cache_data={"old_data": "value"},
-        expires_at=timezone.now() - timedelta(hours=1)
+        expires_at=timezone.now() - timedelta(hours=1),
     )
 
 
@@ -116,7 +115,7 @@ def time_series_data():
             timestamp=base_time + timedelta(minutes=i),
             value_float=float(i * 10),
             value_int=i * 100,
-            tags={"category": "test", "instance": f"server_{i}"}
+            tags={"category": "test", "instance": f"server_{i}"},
         )
         data_points.append(point)
 
@@ -131,7 +130,7 @@ def time_series_string_data():
         source="system_monitor",
         timestamp=timezone.now(),
         value_string="healthy",
-        tags={"service": "api", "environment": "test"}
+        tags={"service": "api", "environment": "test"},
     )
 
 
@@ -143,5 +142,5 @@ def time_series_bool_data():
         source="monitoring_system",
         timestamp=timezone.now(),
         value_bool=True,
-        tags={"severity": "high", "type": "threshold"}
+        tags={"severity": "high", "type": "threshold"},
     )

@@ -1,14 +1,19 @@
-import pytest
 import json
-from unittest.mock import patch, MagicMock
 from datetime import datetime
+from unittest.mock import MagicMock, patch
 
-from django.test import TestCase, Client
-from django.utils import timezone
 from django.core.cache import cache
 from django.db import connection
+from django.test import Client, TestCase
+from django.utils import timezone
 
-from apps.analytics.health import health_check, check_database_connection, check_redis_connection
+import pytest
+
+from apps.analytics.health import (
+    check_database_connection,
+    check_redis_connection,
+    health_check,
+)
 
 
 @pytest.mark.django_db
@@ -21,9 +26,9 @@ class TestHealthCheckView:
 
     def test_health_check_all_healthy(self, client):
         """Test health check when all services are healthy."""
-        with patch('apps.analytics.health.check_database_connection', return_value=True), \
-             patch('apps.analytics.health.check_redis_connection', return_value=True):
-
+        with patch(
+            "apps.analytics.health.check_database_connection", return_value=True
+        ), patch("apps.analytics.health.check_redis_connection", return_value=True):
             response = client.get("/health/")
             assert response.status_code == 200
 
@@ -35,9 +40,9 @@ class TestHealthCheckView:
 
     def test_health_check_database_unhealthy(self, client):
         """Test health check when database is unhealthy."""
-        with patch('apps.analytics.health.check_database_connection', return_value=False), \
-             patch('apps.analytics.health.check_redis_connection', return_value=True):
-
+        with patch(
+            "apps.analytics.health.check_database_connection", return_value=False
+        ), patch("apps.analytics.health.check_redis_connection", return_value=True):
             response = client.get("/health/")
             assert response.status_code == 503
 
@@ -48,9 +53,9 @@ class TestHealthCheckView:
 
     def test_health_check_redis_unhealthy(self, client):
         """Test health check when Redis is unhealthy."""
-        with patch('apps.analytics.health.check_database_connection', return_value=True), \
-             patch('apps.analytics.health.check_redis_connection', return_value=False):
-
+        with patch(
+            "apps.analytics.health.check_database_connection", return_value=True
+        ), patch("apps.analytics.health.check_redis_connection", return_value=False):
             response = client.get("/health/")
             assert response.status_code == 503
 
@@ -61,9 +66,9 @@ class TestHealthCheckView:
 
     def test_health_check_all_unhealthy(self, client):
         """Test health check when all services are unhealthy."""
-        with patch('apps.analytics.health.check_database_connection', return_value=False), \
-             patch('apps.analytics.health.check_redis_connection', return_value=False):
-
+        with patch(
+            "apps.analytics.health.check_database_connection", return_value=False
+        ), patch("apps.analytics.health.check_redis_connection", return_value=False):
             response = client.get("/health/")
             assert response.status_code == 503
 
@@ -74,8 +79,10 @@ class TestHealthCheckView:
 
     def test_health_check_exception_handling(self, client):
         """Test health check when an exception occurs."""
-        with patch('apps.analytics.health.check_database_connection', side_effect=Exception("Database error")):
-
+        with patch(
+            "apps.analytics.health.check_database_connection",
+            side_effect=Exception("Database error"),
+        ):
             response = client.get("/health/")
             assert response.status_code == 500
 
@@ -86,9 +93,9 @@ class TestHealthCheckView:
 
     def test_health_check_timestamp_format(self, client):
         """Test that timestamp is in ISO format."""
-        with patch('apps.analytics.health.check_database_connection', return_value=True), \
-             patch('apps.analytics.health.check_redis_connection', return_value=True):
-
+        with patch(
+            "apps.analytics.health.check_database_connection", return_value=True
+        ), patch("apps.analytics.health.check_redis_connection", return_value=True):
             response = client.get("/health/")
             data = response.json()
 
@@ -107,9 +114,9 @@ class TestHealthCheckView:
 
     def test_health_check_response_structure(self, client):
         """Test the structure of health check response."""
-        with patch('apps.analytics.health.check_database_connection', return_value=True), \
-             patch('apps.analytics.health.check_redis_connection', return_value=True):
-
+        with patch(
+            "apps.analytics.health.check_database_connection", return_value=True
+        ), patch("apps.analytics.health.check_redis_connection", return_value=True):
             response = client.get("/health/")
             data = response.json()
 
@@ -127,17 +134,17 @@ class TestHealthCheckView:
     def test_health_check_status_values(self, client):
         """Test that status field contains expected values."""
         # Test healthy status
-        with patch('apps.analytics.health.check_database_connection', return_value=True), \
-             patch('apps.analytics.health.check_redis_connection', return_value=True):
-
+        with patch(
+            "apps.analytics.health.check_database_connection", return_value=True
+        ), patch("apps.analytics.health.check_redis_connection", return_value=True):
             response = client.get("/health/")
             data = response.json()
             assert data["status"] in ["healthy", "unhealthy"]
 
         # Test unhealthy status
-        with patch('apps.analytics.health.check_database_connection', return_value=False), \
-             patch('apps.analytics.health.check_redis_connection', return_value=True):
-
+        with patch(
+            "apps.analytics.health.check_database_connection", return_value=False
+        ), patch("apps.analytics.health.check_redis_connection", return_value=True):
             response = client.get("/health/")
             data = response.json()
             assert data["status"] in ["healthy", "unhealthy"]
@@ -149,14 +156,16 @@ class TestDatabaseHealthCheck:
 
     def test_database_connection_healthy(self):
         """Test successful database connection check."""
-        with patch.object(connection, 'ensure_connection') as mock_ensure:
+        with patch.object(connection, "ensure_connection") as mock_ensure:
             result = check_database_connection()
             assert result is True
             mock_ensure.assert_called_once()
 
     def test_database_connection_unhealthy(self):
         """Test failed database connection check."""
-        with patch.object(connection, 'ensure_connection', side_effect=Exception("DB Error")):
+        with patch.object(
+            connection, "ensure_connection", side_effect=Exception("DB Error")
+        ):
             result = check_database_connection()
             assert result is False
 
@@ -174,9 +183,9 @@ class TestRedisHealthCheck:
 
     def test_redis_connection_healthy(self):
         """Test successful Redis connection check."""
-        with patch.object(cache, 'set') as mock_set, \
-             patch.object(cache, 'get', return_value='ok') as mock_get:
-
+        with patch.object(cache, "set") as mock_set, patch.object(
+            cache, "get", return_value="ok"
+        ) as mock_get:
             result = check_redis_connection()
             assert result is True
             mock_set.assert_called_with("health_check", "ok", timeout=10)
@@ -184,27 +193,27 @@ class TestRedisHealthCheck:
 
     def test_redis_connection_unhealthy_exception(self):
         """Test Redis connection check with exception."""
-        with patch.object(cache, 'set', side_effect=Exception("Redis Error")):
+        with patch.object(cache, "set", side_effect=Exception("Redis Error")):
             result = check_redis_connection()
             assert result is False
 
     def test_redis_connection_unhealthy_value_mismatch(self):
         """Test Redis connection check with value mismatch."""
-        with patch.object(cache, 'set') as mock_set, \
-             patch.object(cache, 'get', return_value='wrong_value') as mock_get:
-
+        with patch.object(cache, "set") as mock_set, patch.object(
+            cache, "get", return_value="wrong_value"
+        ) as mock_get:
             result = check_redis_connection()
             assert result is False
 
     def test_redis_connection_retry_logic(self):
         """Test Redis connection retry logic."""
-        with patch.object(cache, 'set') as mock_set:
+        with patch.object(cache, "set") as mock_set:
             # First two calls raise exception, third succeeds
             mock_set.side_effect = [Exception("Error 1"), Exception("Error 2"), None]
 
-            with patch.object(cache, 'get', return_value='ok') as mock_get, \
-                 patch('time.sleep') as mock_sleep:
-
+            with patch.object(cache, "get", return_value="ok") as mock_get, patch(
+                "time.sleep"
+            ) as mock_sleep:
                 result = check_redis_connection()
                 assert result is True
                 assert mock_set.call_count == 3
@@ -212,9 +221,9 @@ class TestRedisHealthCheck:
 
     def test_redis_connection_max_retries_exceeded(self):
         """Test Redis connection when max retries are exceeded."""
-        with patch.object(cache, 'set', side_effect=Exception("Persistent Error")), \
-             patch('time.sleep') as mock_sleep:
-
+        with patch.object(
+            cache, "set", side_effect=Exception("Persistent Error")
+        ), patch("time.sleep") as mock_sleep:
             result = check_redis_connection()
             assert result is False
             # Should try 3 times, so 2 sleep calls
@@ -222,22 +231,22 @@ class TestRedisHealthCheck:
 
     def test_redis_connection_partial_retry_success(self):
         """Test Redis connection succeeding on second attempt."""
-        with patch.object(cache, 'set') as mock_set:
+        with patch.object(cache, "set") as mock_set:
             # First call fails, second succeeds
             mock_set.side_effect = [Exception("Error"), None]
 
-            with patch.object(cache, 'get', return_value='ok') as mock_get, \
-                 patch('time.sleep') as mock_sleep:
-
+            with patch.object(cache, "get", return_value="ok") as mock_get, patch(
+                "time.sleep"
+            ) as mock_sleep:
                 result = check_redis_connection()
                 assert result is True
                 assert mock_set.call_count == 2
                 assert mock_sleep.call_count == 1
 
-    @patch('apps.analytics.health.logger')
+    @patch("apps.analytics.health.logger")
     def test_redis_connection_logging(self, mock_logger):
         """Test Redis connection logging."""
-        with patch.object(cache, 'set', side_effect=Exception("Redis Error")):
+        with patch.object(cache, "set", side_effect=Exception("Redis Error")):
             check_redis_connection()
 
             # Should log errors for each attempt
@@ -287,9 +296,13 @@ class TestHealthCheckIntegration:
         ]
 
         for db_healthy, redis_healthy, expected_code in test_cases:
-            with patch('apps.analytics.health.check_database_connection', return_value=db_healthy), \
-                 patch('apps.analytics.health.check_redis_connection', return_value=redis_healthy):
-
+            with patch(
+                "apps.analytics.health.check_database_connection",
+                return_value=db_healthy,
+            ), patch(
+                "apps.analytics.health.check_redis_connection",
+                return_value=redis_healthy,
+            ):
                 response = client.get("/health/")
                 assert response.status_code == expected_code
 
@@ -325,9 +338,9 @@ class TestHealthCheckIntegration:
 
     def test_health_check_consistency(self, client):
         """Test health check returns consistent results."""
-        with patch('apps.analytics.health.check_database_connection', return_value=True), \
-             patch('apps.analytics.health.check_redis_connection', return_value=True):
-
+        with patch(
+            "apps.analytics.health.check_database_connection", return_value=True
+        ), patch("apps.analytics.health.check_redis_connection", return_value=True):
             # Make multiple requests
             responses = [client.get("/health/") for _ in range(3)]
 
@@ -341,7 +354,10 @@ class TestHealthCheckIntegration:
 
     def test_health_check_error_response_structure(self, client):
         """Test error response structure when exception occurs."""
-        with patch('apps.analytics.health.check_database_connection', side_effect=Exception("Test error")):
+        with patch(
+            "apps.analytics.health.check_database_connection",
+            side_effect=Exception("Test error"),
+        ):
             response = client.get("/health/")
             assert response.status_code == 500
 

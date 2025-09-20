@@ -1,16 +1,18 @@
-import pytest
-from django.test import TestCase
-from django.utils import timezone
-from django.core.exceptions import ValidationError
 from datetime import datetime, timedelta
 from unittest.mock import patch
 
+from django.core.exceptions import ValidationError
+from django.test import TestCase
+from django.utils import timezone
+
+import pytest
+
 from apps.analytics.models import (
+    AnalyticsCache,
     MetricDefinition,
     Report,
-    AnalyticsCache,
+    RetryableModelMixin,
     TimeSeriesData,
-    RetryableModelMixin
 )
 
 
@@ -34,7 +36,10 @@ class TestMetricDefinition:
     def test_metric_definition_with_filters_and_tags(self, metric_definition_complex):
         """Test metric definition with complex data."""
         assert metric_definition_complex.filters == {"status": "active"}
-        assert metric_definition_complex.tags == {"priority": "high", "team": "analytics"}
+        assert metric_definition_complex.tags == {
+            "priority": "high",
+            "team": "analytics",
+        }
         assert metric_definition_complex.aggregation_period == "daily"
 
     def test_metric_definition_timestamps(self, metric_definition):
@@ -55,13 +60,13 @@ class TestMetricDefinition:
             name="active_metric",
             description="Active metric",
             calculation_method="COUNT",
-            is_active=True
+            is_active=True,
         )
         MetricDefinition.objects.create(
             name="inactive_metric",
             description="Inactive metric",
             calculation_method="COUNT",
-            is_active=False
+            is_active=False,
         )
 
         active_metrics = MetricDefinition.objects.filter(is_active=True)
@@ -75,7 +80,7 @@ class TestMetricDefinition:
             metric = MetricDefinition.objects.create(
                 name=f"metric_{method.lower()}",
                 description=f"Metric with {method}",
-                calculation_method=method
+                calculation_method=method,
             )
             assert metric.calculation_method == method
 
@@ -106,7 +111,7 @@ class TestReport:
                 description=f"Report with {status} status",
                 report_type="summary",
                 status=status,
-                generated_by=user
+                generated_by=user,
             )
             assert report.status == status
 
@@ -119,7 +124,7 @@ class TestReport:
                 description=f"{report_type.title()} report",
                 report_type=report_type,
                 status="pending",
-                generated_by=user
+                generated_by=user,
             )
             assert report.report_type == report_type
 
@@ -211,7 +216,9 @@ class TestTimeSeriesData:
         expected = f"test_measurement from test_source at {point.timestamp}"
         assert str(point) == expected
 
-    def test_time_series_multiple_value_types(self, time_series_string_data, time_series_bool_data):
+    def test_time_series_multiple_value_types(
+        self, time_series_string_data, time_series_bool_data
+    ):
         """Test different value types."""
         # String value
         assert time_series_string_data.value_string == "healthy"
@@ -256,8 +263,7 @@ class TestTimeSeriesData:
         end_time = time_series_data[3].timestamp
 
         points = TimeSeriesData.objects.filter(
-            timestamp__gte=start_time,
-            timestamp__lte=end_time
+            timestamp__gte=start_time, timestamp__lte=end_time
         )
         assert points.count() == 3
 
@@ -268,7 +274,7 @@ class TestTimeSeriesData:
             "source": "server1",
             "timestamp": timezone.now(),
             "value_float": 75.5,
-            "tags": {"host": "web-01", "region": "us-east"}
+            "tags": {"host": "web-01", "region": "us-east"},
         }
 
         point = TimeSeriesData.write_point(**point_data)
@@ -284,9 +290,7 @@ class TestTimeSeriesData:
         end_time = time_series_data[-1].timestamp
 
         results = TimeSeriesData.query_range(
-            measurement="test_measurement",
-            start_time=start_time,
-            end_time=end_time
+            measurement="test_measurement", start_time=start_time, end_time=end_time
         )
 
         assert len(results) == 5
@@ -305,7 +309,7 @@ class TestRetryableModelMixin:
         """Test default last retry."""
         assert metric_definition.last_retry is None
 
-    @patch('time.sleep')
+    @patch("time.sleep")
     def test_retryable_save_success(self, mock_sleep, metric_definition):
         """Test successful save without retries."""
         # This should not raise an exception
@@ -340,18 +344,20 @@ class TestModelIntegration:
             report_type="summary",
             status="completed",
             generated_by=user,
-            configuration={"metrics": [metric_definition.id]}
+            configuration={"metrics": [metric_definition.id]},
         )
 
         assert metric_definition.id in report.configuration["metrics"]
-        assert MetricDefinition.objects.get(id=metric_definition.id) == metric_definition
+        assert (
+            MetricDefinition.objects.get(id=metric_definition.id) == metric_definition
+        )
 
     def test_cache_with_report_data(self, report):
         """Test caching report data."""
         cache_entry = AnalyticsCache.objects.create(
             cache_key=f"report_{report.id}",
             cache_data=report.data,
-            expires_at=timezone.now() + timedelta(hours=1)
+            expires_at=timezone.now() + timedelta(hours=1),
         )
 
         assert cache_entry.cache_data == report.data
@@ -366,8 +372,8 @@ class TestModelIntegration:
             tags={
                 "metric_id": str(metric_definition.id),
                 "category": metric_definition.category,
-                "unit": metric_definition.unit
-            }
+                "unit": metric_definition.unit,
+            },
         )
 
         assert point.measurement == metric_definition.name
