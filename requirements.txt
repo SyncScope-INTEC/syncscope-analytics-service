@@ -39,3 +39,9 @@ whitenoise==6.6.0
 python-dotenv==1.0.0
 black==23.12.1
 isort==5.13.2
+
+# Testing
+pytest==8.4.2
+pytest-django==4.9.0
+pytest-cov==6.0.0
+coverage==7.10.6

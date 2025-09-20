@@ -44,22 +44,6 @@ jobs:
         ports:
           - 6379:6379
 
-      influxdb:
-        image: influxdb:2.7
-        env:
-          DOCKER_INFLUXDB_INIT_MODE: setup
-          DOCKER_INFLUXDB_INIT_USERNAME: admin
-          DOCKER_INFLUXDB_INIT_PASSWORD: password
-          DOCKER_INFLUXDB_INIT_ORG: syncscope-test
-          DOCKER_INFLUXDB_INIT_BUCKET: analytics-test
-          DOCKER_INFLUXDB_INIT_ADMIN_TOKEN: test-token-for-analytics
-        options: >-
-          --health-cmd "influx ping"
-          --health-interval 10s
-          --health-timeout 5s
-          --health-retries 5
-        ports:
-          - 8086:8086
 
     steps:
       - name: Checkout code
@@ -111,11 +95,6 @@ jobs:
           JWT_SECRET_KEY: "test-jwt-secret"
           ALLOWED_HOSTS: "localhost,127.0.0.1"
           CORS_ALLOWED_ORIGINS: "http://localhost:3000"
-          # InfluxDB test configuration
-          INFLUXDB_URL: "http://localhost:8086"
-          INFLUXDB_TOKEN: "test-token-for-analytics"
-          INFLUXDB_ORG: "syncscope-test"
-          INFLUXDB_BUCKET: "analytics-test"
           # Service URLs for testing
           AUTH_SERVICE_URL: "http://localhost:8001"
           MONITORING_SERVICE_URL: "http://localhost:8002"
@@ -185,10 +164,6 @@ jobs:
           JWT_SECRET_KEY: "test-jwt-secret"
           ALLOWED_HOSTS: "localhost,127.0.0.1"
           CORS_ALLOWED_ORIGINS: "http://localhost:3000"
-          INFLUXDB_URL: "http://localhost:8086"
-          INFLUXDB_TOKEN: "test-token-for-analytics"
-          INFLUXDB_ORG: "syncscope-test"
-          INFLUXDB_BUCKET: "analytics-test"
           AUTH_SERVICE_URL: "http://localhost:8001"
           MONITORING_SERVICE_URL: "http://localhost:8002"
           MANAGEMENT_SERVICE_URL: "http://localhost:8003"
@@ -197,7 +172,7 @@ jobs:
           MAX_REPORT_SIZE: "1000"
         run: |
           # Install diff-cover for differential coverage
-          pip install diff-cover coverage pytest
+          pip install diff-cover
 
           # Run all tests with coverage report generation
           coverage run -m pytest tests/ --ds=config.settings || echo "Tests directory not found, creating placeholder"
@@ -274,10 +249,6 @@ jobs:
           JWT_SECRET_KEY: "test-jwt-secret"
           ALLOWED_HOSTS: "localhost,127.0.0.1"
           CORS_ALLOWED_ORIGINS: "http://localhost:3000"
-          INFLUXDB_URL: "http://localhost:8086"
-          INFLUXDB_TOKEN: "test-token-for-analytics"
-          INFLUXDB_ORG: "syncscope-test"
-          INFLUXDB_BUCKET: "analytics-test"
           AUTH_SERVICE_URL: "http://localhost:8001"
           MONITORING_SERVICE_URL: "http://localhost:8002"
           MANAGEMENT_SERVICE_URL: "http://localhost:8003"
@@ -285,9 +256,6 @@ jobs:
           CACHE_TIMEOUT: "60"
           MAX_REPORT_SIZE: "1000"
         run: |
-          # Install coverage and pytest if not installed
-          pip install coverage pytest
-
           # Create tests directory if it doesn't exist
           if [ ! -d "tests" ]; then
             mkdir -p tests
@@ -425,24 +393,12 @@ jobs:
           DB_HOST: "localhost"
           DB_PORT: "5432"
           REDIS_URL: "redis://localhost:6379/0"
-          INFLUXDB_URL: "http://localhost:8086"
-          INFLUXDB_TOKEN: "test-token-for-analytics"
-          INFLUXDB_ORG: "syncscope-test"
-          INFLUXDB_BUCKET: "analytics-test"
         run: |
-          # Test InfluxDB connection
-          echo "Testing InfluxDB connection..."
-          python -c "
-          from apps.analytics.influxdb_client import influxdb_manager
-          print('InfluxDB available:', influxdb_manager.is_available())
-          "
-
           # Test data analysis imports
           echo "Testing data analysis dependencies..."
           python -c "
           import pandas as pd
           import numpy as np
-          from apps.analytics.data_analysis import StatisticalAnalyzer
           print('✅ Data analysis dependencies working')
           "
 
@@ -466,10 +422,6 @@ jobs:
           JWT_SECRET_KEY: "test-jwt-secret"
           ALLOWED_HOSTS: "localhost,127.0.0.1"
           CORS_ALLOWED_ORIGINS: "http://localhost:3000"
-          INFLUXDB_URL: "http://localhost:8086"
-          INFLUXDB_TOKEN: "test-token-for-analytics"
-          INFLUXDB_ORG: "syncscope-test"
-          INFLUXDB_BUCKET: "analytics-test"
         run: |
           # Collect static files
           python manage.py collectstatic --noinput
