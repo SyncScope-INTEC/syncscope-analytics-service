@@ -8,7 +8,6 @@ from apps.analytics.service_integration import (
     AuthServiceClient,
     ManagementServiceClient,
     MonitoringServiceClient,
-    ServiceIntegrationError,
 )
 
 
@@ -69,7 +68,7 @@ class TestMonitoringServiceClient:
 
         client = MonitoringServiceClient()
 
-        with pytest.raises(ServiceIntegrationError):
+        with pytest.raises(requests.RequestException):
             client.get_user_sessions("nonexistent-user", "2024-01-01", "2024-01-31")
 
     @patch("requests.Session.get")
@@ -82,7 +81,7 @@ class TestMonitoringServiceClient:
 
         client = MonitoringServiceClient()
 
-        with pytest.raises(ServiceIntegrationError):
+        with pytest.raises(requests.RequestException):
             client.get_user_sessions("test-user-id", "2024-01-01", "2024-01-31")
 
     @patch("requests.Session.get")
@@ -92,7 +91,7 @@ class TestMonitoringServiceClient:
 
         client = MonitoringServiceClient()
 
-        with pytest.raises(ServiceIntegrationError):
+        with pytest.raises(requests.RequestException):
             client.get_user_sessions("test-user-id", "2024-01-01", "2024-01-31")
 
     @patch("requests.Session.get")
@@ -102,7 +101,7 @@ class TestMonitoringServiceClient:
 
         client = MonitoringServiceClient()
 
-        with pytest.raises(ServiceIntegrationError):
+        with pytest.raises(requests.RequestException):
             client.get_user_sessions("test-user-id", "2024-01-01", "2024-01-31")
 
     @patch("requests.Session.get")
@@ -452,7 +451,7 @@ class TestAuthServiceClient:
         assert result["restrictions"]["can_export_data"] is True
 
 
-class TestServiceIntegrationErrorHandling:
+class TestServiceRequestErrorHandling:
     """Test error handling in service integration"""
 
     @patch("requests.Session.get")
@@ -462,7 +461,7 @@ class TestServiceIntegrationErrorHandling:
 
         client = MonitoringServiceClient()
 
-        with pytest.raises(ServiceIntegrationError) as exc_info:
+        with pytest.raises(requests.RequestException) as exc_info:
             client.get_user_sessions("test-user-id", "2024-01-01", "2024-01-31")
 
         assert "timeout" in str(exc_info.value).lower()
@@ -474,7 +473,7 @@ class TestServiceIntegrationErrorHandling:
 
         client = ManagementServiceClient()
 
-        with pytest.raises(ServiceIntegrationError) as exc_info:
+        with pytest.raises(requests.RequestException) as exc_info:
             client.get_user_projects("test-user-id")
 
         assert "connection" in str(exc_info.value).lower()
@@ -489,7 +488,7 @@ class TestServiceIntegrationErrorHandling:
 
         client = AuthServiceClient()
 
-        with pytest.raises(ServiceIntegrationError) as exc_info:
+        with pytest.raises(requests.RequestException) as exc_info:
             client.verify_token("test-token")
 
         assert "500" in str(exc_info.value)
@@ -504,7 +503,7 @@ class TestServiceIntegrationErrorHandling:
 
         client = MonitoringServiceClient()
 
-        with pytest.raises(ServiceIntegrationError) as exc_info:
+        with pytest.raises(requests.RequestException) as exc_info:
             client.get_user_sessions("test-user-id", "2024-01-01", "2024-01-31")
 
         assert "json" in str(exc_info.value).lower()
@@ -578,7 +577,7 @@ class TestServiceIntegrationRetry:
 
         # This would normally retry internally if retry logic is implemented
         # For now, it should raise an error on first 503
-        with pytest.raises(ServiceIntegrationError):
+        with pytest.raises(requests.RequestException):
             client.get_user_sessions("test-user-id", "2024-01-01", "2024-01-31")
 
     @patch("requests.Session.get")
@@ -592,7 +591,7 @@ class TestServiceIntegrationRetry:
         client = ManagementServiceClient()
 
         # Should not retry on 404, should fail immediately
-        with pytest.raises(ServiceIntegrationError):
+        with pytest.raises(requests.RequestException):
             client.get_user_projects("nonexistent-user")
 
         # Should only be called once (no retry)

@@ -7,11 +7,11 @@ import pytest
 
 from apps.analytics.metric_calculators import (
     CodeQualityMetricCalculator,
+    CollaborationMetricCalculator,
     MetricCalculationService,
     MetricCalculatorFactory,
     MetricCalculatorRegistry,
     ProductivityMetricCalculator,
-    TeamCollaborationMetricCalculator,
 )
 from apps.analytics.models import MetricDefinition
 
@@ -48,7 +48,7 @@ class TestMetricCalculatorFactory:
         )
 
         calculator = MetricCalculatorFactory.create_calculator(metric_definition)
-        assert isinstance(calculator, TeamCollaborationMetricCalculator)
+        assert isinstance(calculator, CollaborationMetricCalculator)
 
     def test_unsupported_calculation_method(self):
         """Test handling unsupported calculation method"""
@@ -266,8 +266,8 @@ class TestCodeQualityMetricCalculator:
 
 
 @pytest.mark.django_db
-class TestTeamCollaborationMetricCalculator:
-    """Test cases for TeamCollaborationMetricCalculator"""
+class TestCollaborationMetricCalculator:
+    """Test cases for CollaborationMetricCalculator"""
 
     @pytest.fixture
     def collaboration_metric(self):
@@ -298,7 +298,7 @@ class TestTeamCollaborationMetricCalculator:
         }
         mock_management.return_value = mock_management_instance
 
-        calculator = TeamCollaborationMetricCalculator(collaboration_metric)
+        calculator = CollaborationMetricCalculator(collaboration_metric)
         context = {
             "user_id": "test-user-id",
             "team_id": "test-team-id",
