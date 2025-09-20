@@ -5,14 +5,19 @@ from unittest.mock import Mock, patch
 
 import django
 from django.conf import settings
+from django.test.utils import setup_test_environment, teardown_test_environment
 from django.utils import timezone
 
 import pytest
 
 # Configure Django settings before importing anything else
+os.environ.setdefault("DJANGO_SETTINGS_MODULE", "config.test_settings")
+
 if not settings.configured:
-    os.environ.setdefault("DJANGO_SETTINGS_MODULE", "config.test_settings")
     django.setup()
+
+# Setup test environment for Django
+setup_test_environment()
 
 from rest_framework.test import APIClient
 from rest_framework_simplejwt.tokens import RefreshToken
@@ -225,7 +230,15 @@ def sample_dashboard_data():
 @pytest.fixture(autouse=True)
 def enable_db_access_for_all_tests(db):
     """Enable database access for all tests automatically"""
-    pass
+    # Ensure we're using the test database
+    from django.db import connection
+    from django.core.management.color import no_style
+
+    # Reset the database for each test
+    style = no_style()
+    connection.ops.sql_flush(style, [])
+
+    return db
 
 
 @pytest.fixture

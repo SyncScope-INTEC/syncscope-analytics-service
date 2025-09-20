@@ -31,3 +31,14 @@ skip_glob = ["*/migrations/*"]
 known_django = "django"
 known_first_party = ["apps", "config"]
 sections = ["FUTURE", "STDLIB", "DJANGO", "THIRDPARTY", "FIRSTPARTY", "LOCALFOLDER"]
+
+[tool.pytest.ini_options]
+DJANGO_SETTINGS_MODULE = "config.test_settings"
+python_files = ["tests.py", "test_*.py", "*_tests.py"]
+python_classes = ["Test*"]
+python_functions = ["test_*"]
+addopts = "--tb=short --strict-markers --disable-warnings --reuse-db"
+testpaths = ["tests"]
+markers = [
+    "django_db: Mark test as requiring database access"
+]
