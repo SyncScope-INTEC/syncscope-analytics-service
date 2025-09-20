@@ -231,8 +231,8 @@ def sample_dashboard_data():
 def enable_db_access_for_all_tests(db):
     """Enable database access for all tests automatically"""
     # Ensure we're using the test database
-    from django.db import connection
     from django.core.management.color import no_style
+    from django.db import connection
 
     # Reset the database for each test
     style = no_style()
