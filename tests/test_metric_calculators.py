@@ -1,15 +1,17 @@
-import pytest
-from unittest.mock import Mock, patch
 from datetime import datetime, timedelta
+from unittest.mock import Mock, patch
+
 from django.utils import timezone
 
+import pytest
+
 from apps.analytics.metric_calculators import (
-    MetricCalculatorFactory,
-    ProductivityMetricCalculator,
     CodeQualityMetricCalculator,
-    TeamCollaborationMetricCalculator,
+    MetricCalculationService,
+    MetricCalculatorFactory,
     MetricCalculatorRegistry,
-    MetricCalculationService
+    ProductivityMetricCalculator,
+    TeamCollaborationMetricCalculator,
 )
 from apps.analytics.models import MetricDefinition
 
@@ -31,7 +33,7 @@ class TestMetricCalculatorFactory:
         metric_definition = MetricDefinition.objects.create(
             name="Code Quality Metric",
             description="Test code quality metric",
-            calculation_method="code_quality"
+            calculation_method="code_quality",
         )
 
         calculator = MetricCalculatorFactory.create_calculator(metric_definition)
@@ -42,7 +44,7 @@ class TestMetricCalculatorFactory:
         metric_definition = MetricDefinition.objects.create(
             name="Collaboration Metric",
             description="Test collaboration metric",
-            calculation_method="team_collaboration"
+            calculation_method="team_collaboration",
         )
 
         calculator = MetricCalculatorFactory.create_calculator(metric_definition)
@@ -53,7 +55,7 @@ class TestMetricCalculatorFactory:
         metric_definition = MetricDefinition.objects.create(
             name="Unsupported Metric",
             description="Test unsupported metric",
-            calculation_method="unsupported_method"
+            calculation_method="unsupported_method",
         )
 
         with pytest.raises(ValueError, match="Unsupported calculation method"):
@@ -64,9 +66,16 @@ class TestMetricCalculatorFactory:
         categories = MetricCalculatorFactory.get_available_categories()
 
         expected_categories = [
-            "productivity", "code_quality", "team_collaboration",
-            "performance", "security", "efficiency", "engagement",
-            "learning", "deployment", "innovation"
+            "productivity",
+            "code_quality",
+            "team_collaboration",
+            "performance",
+            "security",
+            "efficiency",
+            "engagement",
+            "learning",
+            "deployment",
+            "innovation",
         ]
 
         for category in expected_categories:
@@ -87,13 +96,15 @@ class TestProductivityMetricCalculator:
                 "weight_sessions": 0.4,
                 "weight_commits": 0.6,
                 "baseline_sessions_per_day": 3,
-                "baseline_commits_per_day": 5
-            }
+                "baseline_commits_per_day": 5,
+            },
         )
 
-    @patch('apps.analytics.service_integration.MonitoringServiceClient')
-    @patch('apps.analytics.service_integration.ManagementServiceClient')
-    def test_productivity_calculation(self, mock_management, mock_monitoring, productivity_metric):
+    @patch("apps.analytics.service_integration.MonitoringServiceClient")
+    @patch("apps.analytics.service_integration.ManagementServiceClient")
+    def test_productivity_calculation(
+        self, mock_management, mock_monitoring, productivity_metric
+    ):
         """Test productivity metric calculation"""
         # Mock monitoring service response
         mock_monitoring_instance = Mock()
@@ -103,14 +114,14 @@ class TestProductivityMetricCalculator:
                     "user_id": "test-user-id",
                     "start_time": "2024-01-01T09:00:00Z",
                     "end_time": "2024-01-01T10:30:00Z",
-                    "duration": 90
+                    "duration": 90,
                 },
                 {
                     "user_id": "test-user-id",
                     "start_time": "2024-01-01T14:00:00Z",
                     "end_time": "2024-01-01T15:00:00Z",
-                    "duration": 60
-                }
+                    "duration": 60,
+                },
             ]
         }
         mock_monitoring.return_value = mock_monitoring_instance
@@ -119,16 +130,8 @@ class TestProductivityMetricCalculator:
         mock_management_instance = Mock()
         mock_management_instance.get_user_commits.return_value = {
             "commits": [
-                {
-                    "user_id": "test-user-id",
-                    "date": "2024-01-01",
-                    "count": 3
-                },
-                {
-                    "user_id": "test-user-id",
-                    "date": "2024-01-02",
-                    "count": 5
-                }
+                {"user_id": "test-user-id", "date": "2024-01-01", "count": 3},
+                {"user_id": "test-user-id", "date": "2024-01-02", "count": 5},
             ]
         }
         mock_management.return_value = mock_management_instance
@@ -137,7 +140,7 @@ class TestProductivityMetricCalculator:
         context = {
             "user_id": "test-user-id",
             "start_date": datetime(2024, 1, 1),
-            "end_date": datetime(2024, 1, 31)
+            "end_date": datetime(2024, 1, 31),
         }
 
         result = calculator.calculate(context)
@@ -150,8 +153,14 @@ class TestProductivityMetricCalculator:
 
     def test_productivity_calculation_no_data(self, productivity_metric):
         """Test productivity calculation with no data"""
-        with patch('apps.analytics.service_integration.MonitoringServiceClient') as mock_monitoring, \
-             patch('apps.analytics.service_integration.ManagementServiceClient') as mock_management:
+        with (
+            patch(
+                "apps.analytics.service_integration.MonitoringServiceClient"
+            ) as mock_monitoring,
+            patch(
+                "apps.analytics.service_integration.ManagementServiceClient"
+            ) as mock_management,
+        ):
 
             # Mock empty responses
             mock_monitoring_instance = Mock()
@@ -166,7 +175,7 @@ class TestProductivityMetricCalculator:
             context = {
                 "user_id": "test-user-id",
                 "start_date": datetime(2024, 1, 1),
-                "end_date": datetime(2024, 1, 31)
+                "end_date": datetime(2024, 1, 31),
             }
 
             result = calculator.calculate(context)
@@ -181,7 +190,7 @@ class TestProductivityMetricCalculator:
         context = {
             "user_id": "test-user-id",
             "start_date": datetime(2024, 1, 1),
-            "end_date": datetime(2024, 1, 31)
+            "end_date": datetime(2024, 1, 31),
         }
 
         cache_key = calculator.get_cache_key(context)
@@ -203,29 +212,23 @@ class TestCodeQualityMetricCalculator:
             parameters={
                 "weight_complexity": 0.3,
                 "weight_coverage": 0.4,
-                "weight_duplication": 0.3
-            }
+                "weight_duplication": 0.3,
+            },
         )
 
-    @patch('apps.analytics.service_integration.ManagementServiceClient')
+    @patch("apps.analytics.service_integration.ManagementServiceClient")
     def test_code_quality_calculation(self, mock_management, code_quality_metric):
         """Test code quality metric calculation"""
         # Mock management service response
         mock_management_instance = Mock()
         mock_management_instance.get_code_quality_metrics.return_value = {
-            "complexity": {
-                "average": 2.5,
-                "files": 45
-            },
+            "complexity": {"average": 2.5, "files": 45},
             "coverage": {
                 "percentage": 87.5,
                 "lines_covered": 1250,
-                "total_lines": 1429
+                "total_lines": 1429,
             },
-            "duplication": {
-                "percentage": 3.2,
-                "duplicated_lines": 46
-            }
+            "duplication": {"percentage": 3.2, "duplicated_lines": 46},
         }
         mock_management.return_value = mock_management_instance
 
@@ -234,7 +237,7 @@ class TestCodeQualityMetricCalculator:
             "user_id": "test-user-id",
             "project_id": "test-project-id",
             "start_date": datetime(2024, 1, 1),
-            "end_date": datetime(2024, 1, 31)
+            "end_date": datetime(2024, 1, 31),
         }
 
         result = calculator.calculate(context)
@@ -248,16 +251,15 @@ class TestCodeQualityMetricCalculator:
 
     def test_code_quality_calculation_no_data(self, code_quality_metric):
         """Test code quality calculation with no data"""
-        with patch('apps.analytics.service_integration.ManagementServiceClient') as mock_management:
+        with patch(
+            "apps.analytics.service_integration.ManagementServiceClient"
+        ) as mock_management:
             mock_management_instance = Mock()
             mock_management_instance.get_code_quality_metrics.return_value = {}
             mock_management.return_value = mock_management_instance
 
             calculator = CodeQualityMetricCalculator(code_quality_metric)
-            context = {
-                "user_id": "test-user-id",
-                "project_id": "test-project-id"
-            }
+            context = {"user_id": "test-user-id", "project_id": "test-project-id"}
 
             result = calculator.calculate(context)
 
@@ -277,11 +279,11 @@ class TestTeamCollaborationMetricCalculator:
             parameters={
                 "weight_pr_reviews": 0.4,
                 "weight_comments": 0.3,
-                "weight_meetings": 0.3
-            }
+                "weight_meetings": 0.3,
+            },
         )
 
-    @patch('apps.analytics.service_integration.ManagementServiceClient')
+    @patch("apps.analytics.service_integration.ManagementServiceClient")
     def test_collaboration_calculation(self, mock_management, collaboration_metric):
         """Test team collaboration metric calculation"""
         # Mock management service response
@@ -290,18 +292,10 @@ class TestTeamCollaborationMetricCalculator:
             "pull_requests": {
                 "reviews_given": 15,
                 "reviews_received": 8,
-                "total_prs": 12
+                "total_prs": 12,
             },
-            "comments": {
-                "pr_comments": 45,
-                "issue_comments": 23,
-                "code_comments": 18
-            },
-            "meetings": {
-                "attended": 8,
-                "organized": 2,
-                "total_hours": 12.5
-            }
+            "comments": {"pr_comments": 45, "issue_comments": 23, "code_comments": 18},
+            "meetings": {"attended": 8, "organized": 2, "total_hours": 12.5},
         }
         mock_management.return_value = mock_management_instance
 
@@ -310,7 +304,7 @@ class TestTeamCollaborationMetricCalculator:
             "user_id": "test-user-id",
             "team_id": "test-team-id",
             "start_date": datetime(2024, 1, 1),
-            "end_date": datetime(2024, 1, 31)
+            "end_date": datetime(2024, 1, 31),
         }
 
         result = calculator.calculate(context)
@@ -338,7 +332,7 @@ class TestMetricCalculatorRegistry:
         calculator = registry.get_calculator("productivity")
 
         assert calculator is not None
-        assert hasattr(calculator, 'calculate')
+        assert hasattr(calculator, "calculate")
 
     def test_get_calculator_by_name(self):
         """Test getting calculator by name"""
@@ -346,7 +340,7 @@ class TestMetricCalculatorRegistry:
         calculator = registry.get_calculator_by_name("productivity")
 
         assert calculator is not None
-        assert hasattr(calculator, 'calculate')
+        assert hasattr(calculator, "calculate")
 
     def test_get_nonexistent_calculator(self):
         """Test getting non-existent calculator"""
@@ -371,14 +365,16 @@ class TestMetricCalculatorRegistry:
 class TestMetricCalculationService:
     """Test cases for MetricCalculationService"""
 
-    @patch('apps.analytics.metric_calculators.MetricCalculatorFactory.create_calculator')
+    @patch(
+        "apps.analytics.metric_calculators.MetricCalculatorFactory.create_calculator"
+    )
     def test_calculate_metric_success(self, mock_create_calculator, metric_definition):
         """Test successful metric calculation"""
         # Mock calculator
         mock_calculator = Mock()
         mock_calculator.calculate.return_value = {
             "test_score": 85.5,
-            "test_data": "success"
+            "test_data": "success",
         }
         mock_create_calculator.return_value = mock_calculator
 
@@ -391,8 +387,12 @@ class TestMetricCalculationService:
         assert result["calculation_method"] == metric_definition.calculation_method
         assert "calculated_at" in result
 
-    @patch('apps.analytics.metric_calculators.MetricCalculatorFactory.create_calculator')
-    def test_calculate_metric_exception(self, mock_create_calculator, metric_definition):
+    @patch(
+        "apps.analytics.metric_calculators.MetricCalculatorFactory.create_calculator"
+    )
+    def test_calculate_metric_exception(
+        self, mock_create_calculator, metric_definition
+    ):
         """Test metric calculation with exception"""
         # Mock calculator that raises exception
         mock_calculator = Mock()
@@ -407,27 +407,29 @@ class TestMetricCalculationService:
         assert result["metric_id"] == str(metric_definition.id)
         assert result["metric_name"] == metric_definition.name
 
-    @patch('apps.analytics.metric_calculators.MetricCalculationService.calculate_metric')
+    @patch(
+        "apps.analytics.metric_calculators.MetricCalculationService.calculate_metric"
+    )
     def test_calculate_multiple_metrics(self, mock_calculate_single, metric_definition):
         """Test calculating multiple metrics"""
         # Create additional metric definitions
         metric2 = MetricDefinition.objects.create(
             name="Second Metric",
             description="Second test metric",
-            calculation_method="code_quality"
+            calculation_method="code_quality",
         )
 
         metric3 = MetricDefinition.objects.create(
             name="Third Metric",
             description="Third test metric",
-            calculation_method="team_collaboration"
+            calculation_method="team_collaboration",
         )
 
         # Mock single calculation results
         mock_calculate_single.side_effect = [
             {"metric_1": "result_1"},
             {"metric_2": "result_2"},
-            {"metric_3": "result_3"}
+            {"metric_3": "result_3"},
         ]
 
         context = {"user_id": "test-user-id"}
@@ -453,7 +455,7 @@ class TestCalculatorEdgeCases:
         metric_definition = MetricDefinition.objects.create(
             name="Minimal Metric",
             description="Metric with minimal parameters",
-            calculation_method="productivity"
+            calculation_method="productivity",
             # No parameters provided
         )
 
@@ -468,7 +470,7 @@ class TestCalculatorEdgeCases:
         context = {
             "user_id": "test-user-id",
             "start_date": "invalid-date",
-            "end_date": "invalid-date"
+            "end_date": "invalid-date",
         }
 
         # Should handle gracefully or raise appropriate exception
@@ -486,19 +488,21 @@ class TestCalculatorEdgeCases:
         result = calculator.calculate(context)
         assert isinstance(result, dict)
 
-    @patch('apps.analytics.service_integration.MonitoringServiceClient')
+    @patch("apps.analytics.service_integration.MonitoringServiceClient")
     def test_calculator_with_service_error(self, mock_monitoring, metric_definition):
         """Test calculator behavior when external service fails"""
         # Mock service to raise exception
         mock_monitoring_instance = Mock()
-        mock_monitoring_instance.get_user_sessions.side_effect = Exception("Service unavailable")
+        mock_monitoring_instance.get_user_sessions.side_effect = Exception(
+            "Service unavailable"
+        )
         mock_monitoring.return_value = mock_monitoring_instance
 
         calculator = ProductivityMetricCalculator(metric_definition)
         context = {
             "user_id": "test-user-id",
             "start_date": datetime(2024, 1, 1),
-            "end_date": datetime(2024, 1, 31)
+            "end_date": datetime(2024, 1, 31),
         }
 
         # Should handle service errors gracefully

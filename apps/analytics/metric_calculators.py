@@ -4,21 +4,25 @@ GitHub Issue #6: Implementar calculadoras de métricas
 """
 
 import logging
+from abc import ABC, abstractmethod
 from datetime import datetime, timedelta
 from decimal import Decimal
-from typing import Dict, List, Optional, Any, Union
-from abc import ABC, abstractmethod
+from typing import Any, Dict, List, Optional, Union
 
-import pandas as pd
-import numpy as np
 from django.utils import timezone
 
+import numpy as np
+import pandas as pd
+
 from .data_analysis import (
-    StatisticalAnalyzer, TrendAnalyzer, ProductivityAnalyzer,
-    DataFrameProcessor, TimeSeriesAnalyzer
+    DataFrameProcessor,
+    ProductivityAnalyzer,
+    StatisticalAnalyzer,
+    TimeSeriesAnalyzer,
+    TrendAnalyzer,
 )
-from .models import TimeSeriesData, MetricSnapshot, MetricDefinition
-from .service_integration import MonitoringServiceClient, ManagementServiceClient
+from .models import MetricDefinition, MetricSnapshot, TimeSeriesData
+from .service_integration import ManagementServiceClient, MonitoringServiceClient
 
 logger = logging.getLogger(__name__)
 
@@ -52,7 +56,9 @@ class BaseMetricCalculator(ABC):
         context_str = "_".join([f"{k}:{v}" for k, v in sorted(context.items())])
         return f"metric:{self.metric_definition.id}:{context_str}"
 
-    def validate_context(self, context: Dict[str, Any], required_keys: List[str]) -> bool:
+    def validate_context(
+        self, context: Dict[str, Any], required_keys: List[str]
+    ) -> bool:
         """
         Validate that context contains required keys
         """
@@ -69,10 +75,10 @@ class ProductivityMetricCalculator(BaseMetricCalculator):
         Calculate productivity metrics
         """
         try:
-            user_id = context.get('user_id')
-            team_id = context.get('team_id')
-            start_date = context.get('start_date', timezone.now() - timedelta(days=30))
-            end_date = context.get('end_date', timezone.now())
+            user_id = context.get("user_id")
+            team_id = context.get("team_id")
+            start_date = context.get("start_date", timezone.now() - timedelta(days=30))
+            end_date = context.get("end_date", timezone.now())
 
             if not user_id and not team_id:
                 raise ValueError("Either user_id or team_id must be provided")
@@ -81,11 +87,19 @@ class ProductivityMetricCalculator(BaseMetricCalculator):
             monitoring_client = MonitoringServiceClient()
 
             if user_id:
-                sessions_data = monitoring_client.get_user_sessions(user_id, start_date, end_date)
-                commits_data = monitoring_client.get_user_git_activity(user_id, start_date, end_date)
+                sessions_data = monitoring_client.get_user_sessions(
+                    user_id, start_date, end_date
+                )
+                commits_data = monitoring_client.get_user_git_activity(
+                    user_id, start_date, end_date
+                )
             else:
-                sessions_data = monitoring_client.get_team_sessions(team_id, start_date, end_date)
-                commits_data = monitoring_client.get_team_git_activity(team_id, start_date, end_date)
+                sessions_data = monitoring_client.get_team_sessions(
+                    team_id, start_date, end_date
+                )
+                commits_data = monitoring_client.get_team_git_activity(
+                    team_id, start_date, end_date
+                )
 
             # Calculate metrics based on calculation method
             method = self.metric_definition.calculation_method
@@ -105,12 +119,16 @@ class ProductivityMetricCalculator(BaseMetricCalculator):
             logger.error(f"Error calculating productivity metric: {e}")
             return {"error": str(e)}
 
-    def _calculate_avg_session_duration(self, sessions_data: List[Dict]) -> Dict[str, Any]:
+    def _calculate_avg_session_duration(
+        self, sessions_data: List[Dict]
+    ) -> Dict[str, Any]:
         """Calculate average session duration"""
         if not sessions_data:
             return {"value": 0, "unit": "minutes", "data_points": 0}
 
-        durations = [session.get('session_duration_minutes', 0) for session in sessions_data]
+        durations = [
+            session.get("session_duration_minutes", 0) for session in sessions_data
+        ]
         durations = [d for d in durations if d > 0]  # Filter out invalid durations
 
         if not durations:
@@ -119,10 +137,10 @@ class ProductivityMetricCalculator(BaseMetricCalculator):
         stats = StatisticalAnalyzer.calculate_basic_stats(durations)
 
         return {
-            "value": round(stats['mean'], 2),
+            "value": round(stats["mean"], 2),
             "unit": "minutes",
             "data_points": len(durations),
-            "statistics": stats
+            "statistics": stats,
         }
 
     def _calculate_commits_per_day(self, commits_data: List[Dict]) -> Dict[str, Any]:
@@ -132,20 +150,20 @@ class ProductivityMetricCalculator(BaseMetricCalculator):
 
         # Group commits by date
         df = pd.DataFrame(commits_data)
-        if 'timestamp' not in df.columns:
+        if "timestamp" not in df.columns:
             return {"value": 0, "unit": "commits/day", "data_points": 0}
 
-        df['timestamp'] = pd.to_datetime(df['timestamp'])
-        df['date'] = df['timestamp'].dt.date
+        df["timestamp"] = pd.to_datetime(df["timestamp"])
+        df["date"] = df["timestamp"].dt.date
 
-        daily_commits = df.groupby('date').size().values
+        daily_commits = df.groupby("date").size().values
         stats = StatisticalAnalyzer.calculate_basic_stats(daily_commits)
 
         return {
-            "value": round(stats['mean'], 2),
+            "value": round(stats["mean"], 2),
             "unit": "commits/day",
             "data_points": len(daily_commits),
-            "statistics": stats
+            "statistics": stats,
         }
 
     def _calculate_code_lines_per_day(self, commits_data: List[Dict]) -> Dict[str, Any]:
@@ -154,32 +172,36 @@ class ProductivityMetricCalculator(BaseMetricCalculator):
             return {"value": 0, "unit": "lines/day", "data_points": 0}
 
         df = pd.DataFrame(commits_data)
-        required_cols = ['timestamp', 'insertions', 'deletions']
+        required_cols = ["timestamp", "insertions", "deletions"]
 
         if not all(col in df.columns for col in required_cols):
             return {"value": 0, "unit": "lines/day", "data_points": 0}
 
-        df['timestamp'] = pd.to_datetime(df['timestamp'])
-        df['date'] = df['timestamp'].dt.date
-        df['total_lines'] = df['insertions'] + df['deletions']
+        df["timestamp"] = pd.to_datetime(df["timestamp"])
+        df["date"] = df["timestamp"].dt.date
+        df["total_lines"] = df["insertions"] + df["deletions"]
 
-        daily_lines = df.groupby('date')['total_lines'].sum().values
+        daily_lines = df.groupby("date")["total_lines"].sum().values
         stats = StatisticalAnalyzer.calculate_basic_stats(daily_lines)
 
         return {
-            "value": round(stats['mean'], 2),
+            "value": round(stats["mean"], 2),
             "unit": "lines/day",
             "data_points": len(daily_lines),
-            "statistics": stats
+            "statistics": stats,
         }
 
-    def _calculate_productivity_score(self, sessions_data: List[Dict], commits_data: List[Dict]) -> Dict[str, Any]:
+    def _calculate_productivity_score(
+        self, sessions_data: List[Dict], commits_data: List[Dict]
+    ) -> Dict[str, Any]:
         """Calculate overall productivity score (0-100)"""
         try:
             # Session-based metrics (weight: 40%)
             session_score = 0
             if sessions_data:
-                avg_duration = self._calculate_avg_session_duration(sessions_data)['value']
+                avg_duration = self._calculate_avg_session_duration(sessions_data)[
+                    "value"
+                ]
                 # Normalize to 0-100 (optimal session: 4-6 hours)
                 session_score = min(100, max(0, (avg_duration / 300) * 100))
 
@@ -187,7 +209,7 @@ class ProductivityMetricCalculator(BaseMetricCalculator):
             commit_score = 0
             if commits_data:
                 commits_result = self._calculate_commits_per_day(commits_data)
-                commits_per_day = commits_result['value']
+                commits_per_day = commits_result["value"]
                 # Normalize to 0-100 (optimal: 2-5 commits per day)
                 commit_score = min(100, max(0, (commits_per_day / 5) * 100))
 
@@ -199,9 +221,9 @@ class ProductivityMetricCalculator(BaseMetricCalculator):
                 "unit": "score",
                 "components": {
                     "session_score": round(session_score, 2),
-                    "commit_score": round(commit_score, 2)
+                    "commit_score": round(commit_score, 2),
                 },
-                "data_points": len(sessions_data) + len(commits_data)
+                "data_points": len(sessions_data) + len(commits_data),
             }
 
         except Exception as e:
@@ -219,10 +241,10 @@ class CodeQualityMetricCalculator(BaseMetricCalculator):
         Calculate code quality metrics
         """
         try:
-            user_id = context.get('user_id')
-            project_id = context.get('project_id')
-            start_date = context.get('start_date', timezone.now() - timedelta(days=30))
-            end_date = context.get('end_date', timezone.now())
+            user_id = context.get("user_id")
+            project_id = context.get("project_id")
+            start_date = context.get("start_date", timezone.now() - timedelta(days=30))
+            end_date = context.get("end_date", timezone.now())
 
             # Get monitoring data
             monitoring_client = MonitoringServiceClient()
@@ -230,7 +252,7 @@ class CodeQualityMetricCalculator(BaseMetricCalculator):
                 user_id=user_id,
                 project_id=project_id,
                 start_date=start_date,
-                end_date=end_date
+                end_date=end_date,
             )
 
             method = self.metric_definition.calculation_method
@@ -253,7 +275,7 @@ class CodeQualityMetricCalculator(BaseMetricCalculator):
         if not code_metrics:
             return {"value": 0, "unit": "complexity", "data_points": 0}
 
-        complexities = [metric.get('complexity_score', 0) for metric in code_metrics]
+        complexities = [metric.get("complexity_score", 0) for metric in code_metrics]
         complexities = [c for c in complexities if c > 0]
 
         if not complexities:
@@ -262,10 +284,10 @@ class CodeQualityMetricCalculator(BaseMetricCalculator):
         stats = StatisticalAnalyzer.calculate_basic_stats(complexities)
 
         return {
-            "value": round(stats['mean'], 2),
+            "value": round(stats["mean"], 2),
             "unit": "complexity",
             "data_points": len(complexities),
-            "statistics": stats
+            "statistics": stats,
         }
 
     def _calculate_test_coverage(self, code_metrics: List[Dict]) -> Dict[str, Any]:
@@ -276,7 +298,7 @@ class CodeQualityMetricCalculator(BaseMetricCalculator):
             "value": 0,
             "unit": "percentage",
             "data_points": 0,
-            "note": "Test coverage calculation requires additional test metrics"
+            "note": "Test coverage calculation requires additional test metrics",
         }
 
     def _calculate_quality_trend(self, code_metrics: List[Dict]) -> Dict[str, Any]:
@@ -285,22 +307,22 @@ class CodeQualityMetricCalculator(BaseMetricCalculator):
             return {"value": 0, "unit": "trend", "data_points": 0}
 
         df = pd.DataFrame(code_metrics)
-        if 'calculated_at' not in df.columns or 'complexity_score' not in df.columns:
+        if "calculated_at" not in df.columns or "complexity_score" not in df.columns:
             return {"value": 0, "unit": "trend", "data_points": 0}
 
         # Sort by time and calculate trend
-        df['calculated_at'] = pd.to_datetime(df['calculated_at'])
-        df = df.sort_values('calculated_at')
+        df["calculated_at"] = pd.to_datetime(df["calculated_at"])
+        df = df.sort_values("calculated_at")
 
-        complexities = df['complexity_score'].tolist()
+        complexities = df["complexity_score"].tolist()
         trend = TrendAnalyzer.calculate_trend(complexities)
 
         return {
-            "value": round(trend['slope'], 4),
+            "value": round(trend["slope"], 4),
             "unit": "trend",
-            "trend_direction": trend['direction'],
-            "trend_strength": round(trend['strength'], 3),
-            "data_points": len(complexities)
+            "trend_direction": trend["direction"],
+            "trend_strength": round(trend["strength"], 3),
+            "data_points": len(complexities),
         }
 
 
@@ -314,9 +336,9 @@ class CollaborationMetricCalculator(BaseMetricCalculator):
         Calculate collaboration metrics
         """
         try:
-            team_id = context.get('team_id')
-            start_date = context.get('start_date', timezone.now() - timedelta(days=30))
-            end_date = context.get('end_date', timezone.now())
+            team_id = context.get("team_id")
+            start_date = context.get("start_date", timezone.now() - timedelta(days=30))
+            end_date = context.get("end_date", timezone.now())
 
             if not team_id:
                 raise ValueError("team_id is required for collaboration metrics")
@@ -326,7 +348,9 @@ class CollaborationMetricCalculator(BaseMetricCalculator):
             monitoring_client = MonitoringServiceClient()
 
             team_members = management_client.get_team_members(team_id)
-            git_events = monitoring_client.get_team_git_activity(team_id, start_date, end_date)
+            git_events = monitoring_client.get_team_git_activity(
+                team_id, start_date, end_date
+            )
 
             method = self.metric_definition.calculation_method
 
@@ -343,7 +367,9 @@ class CollaborationMetricCalculator(BaseMetricCalculator):
             logger.error(f"Error calculating collaboration metric: {e}")
             return {"error": str(e)}
 
-    def _calculate_collaboration_score(self, team_members: List[Dict], git_events: List[Dict]) -> Dict[str, Any]:
+    def _calculate_collaboration_score(
+        self, team_members: List[Dict], git_events: List[Dict]
+    ) -> Dict[str, Any]:
         """Calculate team collaboration score"""
         if not team_members or not git_events:
             return {"value": 0, "unit": "score", "data_points": 0}
@@ -351,24 +377,28 @@ class CollaborationMetricCalculator(BaseMetricCalculator):
         # Create interaction matrix from git events
         interactions = []
         for event in git_events:
-            if event.get('event_type') in ['merge', 'pull']:
-                interactions.append({
-                    'user_a': event.get('author_email'),
-                    'user_b': event.get('reviewer_email', 'unknown'),
-                    'interaction_count': 1,
-                    'interaction_type': event.get('event_type')
-                })
+            if event.get("event_type") in ["merge", "pull"]:
+                interactions.append(
+                    {
+                        "user_a": event.get("author_email"),
+                        "user_b": event.get("reviewer_email", "unknown"),
+                        "interaction_count": 1,
+                        "interaction_type": event.get("event_type"),
+                    }
+                )
 
         if not interactions:
             return {"value": 0, "unit": "score", "data_points": 0}
 
-        collaboration_score = ProductivityAnalyzer.calculate_team_collaboration_score(interactions)
+        collaboration_score = ProductivityAnalyzer.calculate_team_collaboration_score(
+            interactions
+        )
 
         return {
             "value": round(collaboration_score, 2),
             "unit": "score",
             "data_points": len(interactions),
-            "team_size": len(team_members)
+            "team_size": len(team_members),
         }
 
     def _calculate_review_participation(self, git_events: List[Dict]) -> Dict[str, Any]:
@@ -376,8 +406,10 @@ class CollaborationMetricCalculator(BaseMetricCalculator):
         if not git_events:
             return {"value": 0, "unit": "percentage", "data_points": 0}
 
-        review_events = [e for e in git_events if e.get('event_type') in ['merge', 'pull']]
-        total_commits = len([e for e in git_events if e.get('event_type') == 'commit'])
+        review_events = [
+            e for e in git_events if e.get("event_type") in ["merge", "pull"]
+        ]
+        total_commits = len([e for e in git_events if e.get("event_type") == "commit"])
 
         if total_commits == 0:
             return {"value": 0, "unit": "percentage", "data_points": 0}
@@ -388,7 +420,7 @@ class CollaborationMetricCalculator(BaseMetricCalculator):
             "value": round(participation_rate, 2),
             "unit": "percentage",
             "review_events": len(review_events),
-            "total_commits": total_commits
+            "total_commits": total_commits,
         }
 
     def _calculate_knowledge_sharing(self, git_events: List[Dict]) -> Dict[str, Any]:
@@ -401,10 +433,10 @@ class CollaborationMetricCalculator(BaseMetricCalculator):
         files = set()
 
         for event in git_events:
-            if event.get('author_email'):
-                authors.add(event['author_email'])
-            if event.get('files_changed'):
-                files.add(event.get('file_path', 'unknown'))
+            if event.get("author_email"):
+                authors.add(event["author_email"])
+            if event.get("files_changed"):
+                files.add(event.get("file_path", "unknown"))
 
         # Knowledge sharing index: ratio of files touched by multiple authors
         if not files:
@@ -417,7 +449,7 @@ class CollaborationMetricCalculator(BaseMetricCalculator):
             "value": round(sharing_index, 2),
             "unit": "index",
             "unique_authors": len(authors),
-            "unique_files": len(files)
+            "unique_files": len(files),
         }
 
 
@@ -431,8 +463,8 @@ class PerformanceMetricCalculator(BaseMetricCalculator):
         Calculate performance metrics
         """
         try:
-            start_date = context.get('start_date', timezone.now() - timedelta(days=30))
-            end_date = context.get('end_date', timezone.now())
+            start_date = context.get("start_date", timezone.now() - timedelta(days=30))
+            end_date = context.get("end_date", timezone.now())
 
             # Get performance data from PostgreSQL
             performance_data = self._get_performance_data(context, start_date, end_date)
@@ -452,38 +484,48 @@ class PerformanceMetricCalculator(BaseMetricCalculator):
             logger.error(f"Error calculating performance metric: {e}")
             return {"error": str(e)}
 
-    def _get_performance_data(self, context: Dict[str, Any], start_date: datetime, end_date: datetime) -> List[Dict]:
+    def _get_performance_data(
+        self, context: Dict[str, Any], start_date: datetime, end_date: datetime
+    ) -> List[Dict]:
         """Get performance data from PostgreSQL TimeSeriesData"""
         try:
             queryset = TimeSeriesData.query_range(
                 measurement="system_performance",
                 start_time=start_date,
-                end_time=end_date
+                end_time=end_date,
             )
 
             # Add context filters
-            if context.get('service_name'):
-                queryset = queryset.filter(tags__contains={'service': context['service_name']})
+            if context.get("service_name"):
+                queryset = queryset.filter(
+                    tags__contains={"service": context["service_name"]}
+                )
 
             # Convert to list of dictionaries for compatibility
             results = []
             for data_point in queryset:
-                results.append({
-                    'timestamp': data_point.timestamp,
-                    'value': data_point.value,
-                    'tags': data_point.tags,
-                    'fields': data_point.fields,
-                    'source': data_point.source
-                })
+                results.append(
+                    {
+                        "timestamp": data_point.timestamp,
+                        "value": data_point.value,
+                        "tags": data_point.tags,
+                        "fields": data_point.fields,
+                        "source": data_point.source,
+                    }
+                )
 
             return results
         except Exception as e:
             logger.error(f"Error getting performance data: {e}")
             return []
 
-    def _calculate_avg_response_time(self, performance_data: List[Dict]) -> Dict[str, Any]:
+    def _calculate_avg_response_time(
+        self, performance_data: List[Dict]
+    ) -> Dict[str, Any]:
         """Calculate average response time"""
-        response_times = [d['value'] for d in performance_data if d.get('field') == 'response_time']
+        response_times = [
+            d["value"] for d in performance_data if d.get("field") == "response_time"
+        ]
 
         if not response_times:
             return {"value": 0, "unit": "ms", "data_points": 0}
@@ -491,15 +533,17 @@ class PerformanceMetricCalculator(BaseMetricCalculator):
         stats = StatisticalAnalyzer.calculate_basic_stats(response_times)
 
         return {
-            "value": round(stats['mean'], 2),
+            "value": round(stats["mean"], 2),
             "unit": "ms",
             "data_points": len(response_times),
-            "statistics": stats
+            "statistics": stats,
         }
 
     def _calculate_throughput(self, performance_data: List[Dict]) -> Dict[str, Any]:
         """Calculate request throughput"""
-        request_counts = [d['value'] for d in performance_data if d.get('field') == 'request_count']
+        request_counts = [
+            d["value"] for d in performance_data if d.get("field") == "request_count"
+        ]
 
         if not request_counts:
             return {"value": 0, "unit": "requests/sec", "data_points": 0}
@@ -510,19 +554,25 @@ class PerformanceMetricCalculator(BaseMetricCalculator):
         if time_period_hours == 0:
             return {"value": 0, "unit": "requests/sec", "data_points": 0}
 
-        throughput = total_requests / (time_period_hours * 3600)  # Convert to requests per second
+        throughput = total_requests / (
+            time_period_hours * 3600
+        )  # Convert to requests per second
 
         return {
             "value": round(throughput, 2),
             "unit": "requests/sec",
             "data_points": len(request_counts),
-            "total_requests": total_requests
+            "total_requests": total_requests,
         }
 
     def _calculate_error_rate(self, performance_data: List[Dict]) -> Dict[str, Any]:
         """Calculate error rate percentage"""
-        total_requests = sum([d['value'] for d in performance_data if d.get('field') == 'request_count'])
-        error_requests = sum([d['value'] for d in performance_data if d.get('field') == 'error_count'])
+        total_requests = sum(
+            [d["value"] for d in performance_data if d.get("field") == "request_count"]
+        )
+        error_requests = sum(
+            [d["value"] for d in performance_data if d.get("field") == "error_count"]
+        )
 
         if total_requests == 0:
             return {"value": 0, "unit": "percentage", "data_points": 0}
@@ -533,7 +583,7 @@ class PerformanceMetricCalculator(BaseMetricCalculator):
             "value": round(error_rate, 2),
             "unit": "percentage",
             "total_requests": total_requests,
-            "error_requests": error_requests
+            "error_requests": error_requests,
         }
 
 
@@ -543,10 +593,10 @@ class MetricCalculatorFactory:
     """
 
     _calculators = {
-        'productivity': ProductivityMetricCalculator,
-        'code_quality': CodeQualityMetricCalculator,
-        'collaboration': CollaborationMetricCalculator,
-        'performance': PerformanceMetricCalculator,
+        "productivity": ProductivityMetricCalculator,
+        "code_quality": CodeQualityMetricCalculator,
+        "collaboration": CollaborationMetricCalculator,
+        "performance": PerformanceMetricCalculator,
     }
 
     @classmethod
@@ -585,10 +635,10 @@ class MetricCalculationService:
             result = calculator.calculate(context)
 
             # Add metadata
-            result['metric_id'] = str(metric_definition.id)
-            result['metric_name'] = metric_definition.name
-            result['calculation_method'] = metric_definition.calculation_method
-            result['calculated_at'] = timezone.now().isoformat()
+            result["metric_id"] = str(metric_definition.id)
+            result["metric_name"] = metric_definition.name
+            result["calculation_method"] = metric_definition.calculation_method
+            result["calculated_at"] = timezone.now().isoformat()
 
             return result
 
@@ -597,18 +647,22 @@ class MetricCalculationService:
             return {
                 "error": str(e),
                 "metric_id": str(metric_definition.id),
-                "metric_name": metric_definition.name
+                "metric_name": metric_definition.name,
             }
 
     @staticmethod
-    def calculate_multiple_metrics(metric_definitions: List, context: Dict[str, Any]) -> List[Dict[str, Any]]:
+    def calculate_multiple_metrics(
+        metric_definitions: List, context: Dict[str, Any]
+    ) -> List[Dict[str, Any]]:
         """
         Calculate multiple metrics efficiently
         """
         results = []
 
         for metric_definition in metric_definitions:
-            result = MetricCalculationService.calculate_metric(metric_definition, context)
+            result = MetricCalculationService.calculate_metric(
+                metric_definition, context
+            )
             results.append(result)
 
         return results
@@ -636,12 +690,17 @@ class MetricCalculatorRegistry:
         if metric_type in self._calculators:
             # Create mock metric definition for the calculator
             from .models import MetricDefinition
-            mock_definition = type('MockMetricDefinition', (), {
-                'calculation_method': metric_type,
-                'parameters': {},
-                'id': None,
-                'name': metric_type
-            })()
+
+            mock_definition = type(
+                "MockMetricDefinition",
+                (),
+                {
+                    "calculation_method": metric_type,
+                    "parameters": {},
+                    "id": None,
+                    "name": metric_type,
+                },
+            )()
             return MetricCalculatorFactory.create_calculator(mock_definition)
         return None
 

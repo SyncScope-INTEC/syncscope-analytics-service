@@ -1,11 +1,13 @@
-import pytest
 import uuid
 from datetime import datetime, timedelta
+
 from django.core.exceptions import ValidationError
 from django.db import IntegrityError
 from django.utils import timezone
 
-from apps.analytics.models import Report, MetricDefinition, AnalyticsCache
+import pytest
+
+from apps.analytics.models import AnalyticsCache, MetricDefinition, Report
 
 
 @pytest.mark.django_db
@@ -18,7 +20,7 @@ class TestReportModel:
             name="Test Report",
             type="productivity",
             config={"start_date": "2024-01-01", "end_date": "2024-01-31"},
-            created_by=mock_user.id
+            created_by=mock_user.id,
         )
 
         assert report.id is not None
@@ -42,7 +44,7 @@ class TestReportModel:
             type="productivity",
             config={},
             created_by=mock_user.id,
-            status="completed"
+            status="completed",
         )
         assert report.status == "completed"
 
@@ -53,7 +55,7 @@ class TestReportModel:
                 type="productivity",
                 config={},
                 created_by=mock_user.id,
-                status="invalid_status"
+                status="invalid_status",
             )
             report.full_clean()
 
@@ -61,20 +63,14 @@ class TestReportModel:
         """Test report type validation"""
         # Valid type
         report = Report.objects.create(
-            name="Test Report",
-            type="code_quality",
-            config={},
-            created_by=mock_user.id
+            name="Test Report", type="code_quality", config={}, created_by=mock_user.id
         )
         assert report.type == "code_quality"
 
     def test_report_uuid_field(self, mock_user):
         """Test that report ID is a valid UUID"""
         report = Report.objects.create(
-            name="Test Report",
-            type="productivity",
-            config={},
-            created_by=mock_user.id
+            name="Test Report", type="productivity", config={}, created_by=mock_user.id
         )
 
         # Should be a valid UUID
@@ -85,10 +81,7 @@ class TestReportModel:
         """Test timestamp fields"""
         before_creation = timezone.now()
         report = Report.objects.create(
-            name="Test Report",
-            type="productivity",
-            config={},
-            created_by=mock_user.id
+            name="Test Report", type="productivity", config={}, created_by=mock_user.id
         )
         after_creation = timezone.now()
 
@@ -109,14 +102,14 @@ class TestReportModel:
             "start_date": "2024-01-01",
             "end_date": "2024-01-31",
             "include_weekends": False,
-            "metrics": ["productivity", "code_quality"]
+            "metrics": ["productivity", "code_quality"],
         }
 
         report = Report.objects.create(
             name="Test Report",
             type="productivity",
             config=config_data,
-            created_by=mock_user.id
+            created_by=mock_user.id,
         )
 
         assert report.config == config_data
@@ -134,7 +127,7 @@ class TestMetricDefinitionModel:
             name="Test Metric",
             description="A test metric for validation",
             calculation_method="sum",
-            parameters={"threshold": 10}
+            parameters={"threshold": 10},
         )
 
         assert metric.id is not None
@@ -153,7 +146,7 @@ class TestMetricDefinitionModel:
             MetricDefinition.objects.create(
                 name=metric_definition.name,  # Same name
                 description="Different description",
-                calculation_method="avg"
+                calculation_method="avg",
             )
 
     def test_metric_definition_calculation_methods(self):
@@ -164,7 +157,7 @@ class TestMetricDefinitionModel:
             metric = MetricDefinition.objects.create(
                 name=f"Test {method} Metric",
                 description=f"Test {method} calculation",
-                calculation_method=method
+                calculation_method=method,
             )
             assert metric.calculation_method == method
 
@@ -173,14 +166,14 @@ class TestMetricDefinitionModel:
         complex_params = {
             "weights": {"sessions": 0.4, "commits": 0.6},
             "thresholds": {"min": 0, "max": 100},
-            "filters": ["active_only", "exclude_weekends"]
+            "filters": ["active_only", "exclude_weekends"],
         }
 
         metric = MetricDefinition.objects.create(
             name="Complex Metric",
             description="Metric with complex parameters",
             calculation_method="custom",
-            parameters=complex_params
+            parameters=complex_params,
         )
 
         assert metric.parameters == complex_params
@@ -192,7 +185,7 @@ class TestMetricDefinitionModel:
             name="Test Metric",
             description="Test description",
             calculation_method="sum",
-            is_active=False
+            is_active=False,
         )
 
         assert metric.is_active is False
@@ -212,7 +205,7 @@ class TestAnalyticsCacheModel:
             cache_key="test_key_123",
             cache_type="metric_calculation",
             data={"result": 85.5, "calculation_time": 0.5},
-            expires_at=timezone.now() + timedelta(hours=1)
+            expires_at=timezone.now() + timedelta(hours=1),
         )
 
         assert cache_entry.id is not None
@@ -232,7 +225,7 @@ class TestAnalyticsCacheModel:
             cache_key="expired_key",
             cache_type="metric_calculation",
             data={"result": 100},
-            expires_at=timezone.now() - timedelta(hours=1)
+            expires_at=timezone.now() - timedelta(hours=1),
         )
 
         # Create active cache
@@ -240,16 +233,12 @@ class TestAnalyticsCacheModel:
             cache_key="active_key",
             cache_type="metric_calculation",
             data={"result": 200},
-            expires_at=timezone.now() + timedelta(hours=1)
+            expires_at=timezone.now() + timedelta(hours=1),
         )
 
         # Test filtering expired entries
-        expired_entries = AnalyticsCache.objects.filter(
-            expires_at__lt=timezone.now()
-        )
-        active_entries = AnalyticsCache.objects.filter(
-            expires_at__gt=timezone.now()
-        )
+        expired_entries = AnalyticsCache.objects.filter(expires_at__lt=timezone.now())
+        active_entries = AnalyticsCache.objects.filter(expires_at__gt=timezone.now())
 
         assert expired_cache in expired_entries
         assert active_cache in active_entries
@@ -262,7 +251,7 @@ class TestAnalyticsCacheModel:
             cache_key=analytics_cache.cache_key,
             cache_type="dashboard_data",
             data={"different": "data"},
-            expires_at=timezone.now() + timedelta(hours=1)
+            expires_at=timezone.now() + timedelta(hours=1),
         )
 
         # Same cache type and key - should work (overwrite scenario)
@@ -270,7 +259,7 @@ class TestAnalyticsCacheModel:
             cache_key=analytics_cache.cache_key,
             cache_type=analytics_cache.cache_type,
             data={"updated": "data"},
-            expires_at=timezone.now() + timedelta(hours=2)
+            expires_at=timezone.now() + timedelta(hours=2),
         )
 
         # Should have 3 total cache entries
@@ -279,26 +268,20 @@ class TestAnalyticsCacheModel:
     def test_cache_data_json_field(self):
         """Test JSON data field functionality"""
         complex_data = {
-            "metrics": {
-                "productivity": 85.5,
-                "code_quality": 78.3
-            },
+            "metrics": {"productivity": 85.5, "code_quality": 78.3},
             "metadata": {
                 "calculation_time": 1.25,
                 "source": "influxdb",
-                "cached_at": timezone.now().isoformat()
+                "cached_at": timezone.now().isoformat(),
             },
-            "charts": [
-                {"x": "2024-01-01", "y": 80.0},
-                {"x": "2024-01-02", "y": 82.5}
-            ]
+            "charts": [{"x": "2024-01-01", "y": 80.0}, {"x": "2024-01-02", "y": 82.5}],
         }
 
         cache_entry = AnalyticsCache.objects.create(
             cache_key="complex_data_key",
             cache_type="dashboard_data",
             data=complex_data,
-            expires_at=timezone.now() + timedelta(hours=1)
+            expires_at=timezone.now() + timedelta(hours=1),
         )
 
         assert cache_entry.data == complex_data
@@ -311,7 +294,7 @@ class TestAnalyticsCacheModel:
             "metric_calculation",
             "dashboard_data",
             "report_data",
-            "analysis_result"
+            "analysis_result",
         ]
 
         for cache_type in cache_types:
@@ -319,23 +302,21 @@ class TestAnalyticsCacheModel:
                 cache_key=f"test_key_{cache_type}",
                 cache_type=cache_type,
                 data={"test": "data"},
-                expires_at=timezone.now() + timedelta(hours=1)
+                expires_at=timezone.now() + timedelta(hours=1),
             )
             assert cache_entry.cache_type == cache_type
 
-    @pytest.mark.parametrize("cache_type", [
-        "metric_calculation",
-        "dashboard_data",
-        "report_data",
-        "analysis_result"
-    ])
+    @pytest.mark.parametrize(
+        "cache_type",
+        ["metric_calculation", "dashboard_data", "report_data", "analysis_result"],
+    )
     def test_cache_types_parametrized(self, cache_type):
         """Parametrized test for cache types"""
         cache_entry = AnalyticsCache.objects.create(
             cache_key=f"param_test_{cache_type}",
             cache_type=cache_type,
             data={"param_test": True},
-            expires_at=timezone.now() + timedelta(hours=1)
+            expires_at=timezone.now() + timedelta(hours=1),
         )
 
         assert cache_entry.cache_type == cache_type
@@ -353,7 +334,7 @@ class TestModelRelationships:
                 name="Test Report",
                 type="productivity",
                 config={},
-                created_by=None  # Should not be allowed
+                created_by=None,  # Should not be allowed
             )
 
     def test_metric_definition_without_name(self):
@@ -362,7 +343,7 @@ class TestModelRelationships:
             MetricDefinition.objects.create(
                 name=None,  # Should not be allowed
                 description="Test description",
-                calculation_method="sum"
+                calculation_method="sum",
             )
 
     def test_cache_without_expiration(self):
@@ -371,7 +352,7 @@ class TestModelRelationships:
         cache_entry = AnalyticsCache.objects.create(
             cache_key="no_expiration_key",
             cache_type="metric_calculation",
-            data={"result": 100}
+            data={"result": 100},
             # No expires_at set
         )
 

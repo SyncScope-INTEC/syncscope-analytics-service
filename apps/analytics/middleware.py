@@ -27,11 +27,15 @@ class SecurityHeadersMiddleware:
 
         # HSTS for HTTPS
         if request.is_secure():
-            response["Strict-Transport-Security"] = "max-age=31536000; includeSubDomains"
+            response["Strict-Transport-Security"] = (
+                "max-age=31536000; includeSubDomains"
+            )
 
         # CSP for API responses
         if request.path.startswith("/analytics/"):
-            response["Content-Security-Policy"] = "default-src 'none'; script-src 'none'; object-src 'none'"
+            response["Content-Security-Policy"] = (
+                "default-src 'none'; script-src 'none'; object-src 'none'"
+            )
 
         return response
 
@@ -74,15 +78,22 @@ class RateLimitMiddleware(MiddlewareMixin):
 
         if current_count >= limit:
             return JsonResponse(
-                {"error": "Rate limit exceeded", "detail": f"Too many requests. Limit: {limit}/{window//60}min"},
-                status=429
+                {
+                    "error": "Rate limit exceeded",
+                    "detail": f"Too many requests. Limit: {limit}/{window//60}min",
+                },
+                status=429,
             )
 
         # Increment counter
         cache.set(cache_key, current_count + 1, window)
 
         # Store rate limit info for response headers
-        request._rate_limit_info = {"limit": limit, "remaining": max(0, limit - current_count - 1), "reset": window}
+        request._rate_limit_info = {
+            "limit": limit,
+            "remaining": max(0, limit - current_count - 1),
+            "reset": window,
+        }
 
         return None
 
@@ -113,7 +124,9 @@ class RequestLoggingMiddleware:
         start_time = time.time()
 
         # Log request
-        logger.info(f"Analytics Request: {request.method} {request.path} from {self.get_client_ip(request)}")
+        logger.info(
+            f"Analytics Request: {request.method} {request.path} from {self.get_client_ip(request)}"
+        )
 
         response = self.get_response(request)
 
@@ -123,7 +136,9 @@ class RequestLoggingMiddleware:
 
         # Log slow requests
         if duration > 5.0:  # Log requests taking more than 5 seconds
-            logger.warning(f"Slow analytics request: {request.method} {request.path} took {duration:.3f}s")
+            logger.warning(
+                f"Slow analytics request: {request.method} {request.path} took {duration:.3f}s"
+            )
 
         return response
 
@@ -154,7 +169,9 @@ class AnalyticsPerformanceMiddleware:
             cache_key = f"analytics_perf:{endpoint}"
 
             # Get existing metrics
-            metrics = cache.get(cache_key, {"total_requests": 0, "total_time": 0, "avg_time": 0})
+            metrics = cache.get(
+                cache_key, {"total_requests": 0, "total_time": 0, "avg_time": 0}
+            )
 
             # Update metrics
             metrics["total_requests"] += 1
@@ -193,7 +210,7 @@ class CacheControlMiddleware:
                 if "/reports/" in request.path or "/metrics/" in request.path:
                     response["Cache-Control"] = "max-age=300, private"  # 5 minutes
                 else:
-                    response["Cache-Control"] = "max-age=60, private"   # 1 minute
+                    response["Cache-Control"] = "max-age=60, private"  # 1 minute
             else:
                 # Don't cache POST/PUT/DELETE requests
                 response["Cache-Control"] = "no-cache, no-store, must-revalidate"

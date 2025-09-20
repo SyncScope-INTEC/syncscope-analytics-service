@@ -1,7 +1,9 @@
-import pytest
-from unittest.mock import Mock, patch, MagicMock
 from datetime import datetime, timedelta
+from unittest.mock import MagicMock, Mock, patch
+
 from django.utils import timezone
+
+import pytest
 
 from apps.analytics.influxdb_client import InfluxDBManager, influxdb_manager
 
@@ -9,7 +11,7 @@ from apps.analytics.influxdb_client import InfluxDBManager, influxdb_manager
 class TestInfluxDBManager:
     """Test cases for InfluxDBManager"""
 
-    @patch('influxdb_client.InfluxDBClient')
+    @patch("influxdb_client.InfluxDBClient")
     def test_initialization(self, mock_client_class):
         """Test InfluxDB manager initialization"""
         mock_client = Mock()
@@ -19,25 +21,23 @@ class TestInfluxDBManager:
             url="http://localhost:8086",
             token="test-token",
             org="test-org",
-            bucket="test-bucket"
+            bucket="test-bucket",
         )
 
         assert manager.client == mock_client
         assert manager.org == "test-org"
         assert manager.bucket == "test-bucket"
         mock_client_class.assert_called_once_with(
-            url="http://localhost:8086",
-            token="test-token",
-            org="test-org"
+            url="http://localhost:8086", token="test-token", org="test-org"
         )
 
-    @patch('influxdb_client.InfluxDBClient')
+    @patch("influxdb_client.InfluxDBClient")
     def test_initialization_with_defaults(self, mock_client_class):
         """Test initialization with default parameters"""
         mock_client = Mock()
         mock_client_class.return_value = mock_client
 
-        with patch('django.conf.settings') as mock_settings:
+        with patch("django.conf.settings") as mock_settings:
             mock_settings.INFLUXDB_URL = "http://default:8086"
             mock_settings.INFLUXDB_TOKEN = "default-token"
             mock_settings.INFLUXDB_ORG = "default-org"
@@ -48,7 +48,7 @@ class TestInfluxDBManager:
             assert manager.org == "default-org"
             assert manager.bucket == "default-bucket"
 
-    @patch('influxdb_client.InfluxDBClient')
+    @patch("influxdb_client.InfluxDBClient")
     def test_write_metric_basic(self, mock_client_class):
         """Test basic metric writing"""
         mock_client = Mock()
@@ -67,7 +67,7 @@ class TestInfluxDBManager:
         assert result is True
         mock_write_api.write.assert_called_once()
 
-    @patch('influxdb_client.InfluxDBClient')
+    @patch("influxdb_client.InfluxDBClient")
     def test_write_metric_with_timestamp(self, mock_client_class):
         """Test metric writing with custom timestamp"""
         mock_client = Mock()
@@ -87,7 +87,7 @@ class TestInfluxDBManager:
         assert result is True
         mock_write_api.write.assert_called_once()
 
-    @patch('influxdb_client.InfluxDBClient')
+    @patch("influxdb_client.InfluxDBClient")
     def test_write_metric_exception(self, mock_client_class):
         """Test metric writing with exception"""
         mock_client = Mock()
@@ -106,7 +106,7 @@ class TestInfluxDBManager:
 
         assert result is False
 
-    @patch('influxdb_client.InfluxDBClient')
+    @patch("influxdb_client.InfluxDBClient")
     def test_write_bulk_metrics(self, mock_client_class):
         """Test bulk metric writing"""
         mock_client = Mock()
@@ -121,14 +121,14 @@ class TestInfluxDBManager:
                 "measurement": "productivity",
                 "tags": {"user_id": "user1"},
                 "fields": {"score": 85.5},
-                "time": datetime(2024, 1, 1, 12, 0, 0)
+                "time": datetime(2024, 1, 1, 12, 0, 0),
             },
             {
                 "measurement": "productivity",
                 "tags": {"user_id": "user2"},
                 "fields": {"score": 75.0},
-                "time": datetime(2024, 1, 1, 13, 0, 0)
-            }
+                "time": datetime(2024, 1, 1, 13, 0, 0),
+            },
         ]
 
         result = manager.write_bulk_metrics(metrics)
@@ -136,7 +136,7 @@ class TestInfluxDBManager:
         assert result is True
         assert mock_write_api.write.call_count == 2
 
-    @patch('influxdb_client.InfluxDBClient')
+    @patch("influxdb_client.InfluxDBClient")
     def test_query_metrics_basic(self, mock_client_class):
         """Test basic metric querying"""
         mock_client = Mock()
@@ -169,7 +169,7 @@ class TestInfluxDBManager:
         assert results[0]["value"] == 85.5
         mock_query_api.query.assert_called_once()
 
-    @patch('influxdb_client.InfluxDBClient')
+    @patch("influxdb_client.InfluxDBClient")
     def test_query_metrics_with_filters(self, mock_client_class):
         """Test metric querying with filters"""
         mock_client = Mock()
@@ -192,7 +192,7 @@ class TestInfluxDBManager:
         assert "user_id" in call_args
         assert "test-user" in call_args
 
-    @patch('influxdb_client.InfluxDBClient')
+    @patch("influxdb_client.InfluxDBClient")
     def test_query_metrics_exception(self, mock_client_class):
         """Test metric querying with exception"""
         mock_client = Mock()
@@ -210,7 +210,7 @@ class TestInfluxDBManager:
 
         assert results == []
 
-    @patch('influxdb_client.InfluxDBClient')
+    @patch("influxdb_client.InfluxDBClient")
     def test_get_latest_metrics(self, mock_client_class):
         """Test getting latest metrics"""
         mock_client = Mock()
@@ -238,7 +238,7 @@ class TestInfluxDBManager:
         assert results[0]["value"] == 90.0
         mock_query_api.query.assert_called_once()
 
-    @patch('influxdb_client.InfluxDBClient')
+    @patch("influxdb_client.InfluxDBClient")
     def test_aggregate_metrics_sum(self, mock_client_class):
         """Test metric aggregation with sum"""
         mock_client = Mock()
@@ -262,16 +262,13 @@ class TestInfluxDBManager:
         end_time = datetime(2024, 1, 1, 23, 59, 59)
 
         result = manager.aggregate_metrics(
-            "productivity",
-            start_time,
-            end_time,
-            aggregation="sum"
+            "productivity", start_time, end_time, aggregation="sum"
         )
 
         assert result == 500.0
         mock_query_api.query.assert_called_once()
 
-    @patch('influxdb_client.InfluxDBClient')
+    @patch("influxdb_client.InfluxDBClient")
     def test_aggregate_metrics_mean(self, mock_client_class):
         """Test metric aggregation with mean"""
         mock_client = Mock()
@@ -299,12 +296,12 @@ class TestInfluxDBManager:
             start_time,
             end_time,
             aggregation="mean",
-            filters={"user_id": "test-user"}
+            filters={"user_id": "test-user"},
         )
 
         assert result == 82.5
 
-    @patch('influxdb_client.InfluxDBClient')
+    @patch("influxdb_client.InfluxDBClient")
     def test_get_time_series_data(self, mock_client_class):
         """Test getting time series data"""
         mock_client = Mock()
@@ -314,7 +311,7 @@ class TestInfluxDBManager:
         times = [
             datetime(2024, 1, 1, 12, 0, 0),
             datetime(2024, 1, 1, 13, 0, 0),
-            datetime(2024, 1, 1, 14, 0, 0)
+            datetime(2024, 1, 1, 14, 0, 0),
         ]
         values = [80.0, 85.0, 90.0]
 
@@ -339,17 +336,14 @@ class TestInfluxDBManager:
         end_time = datetime(2024, 1, 1, 23, 59, 59)
 
         results = manager.get_time_series_data(
-            "productivity",
-            start_time,
-            end_time,
-            window="1h"
+            "productivity", start_time, end_time, window="1h"
         )
 
         assert len(results) == 3
         assert results[0]["time"] == times[0]
         assert results[0]["value"] == values[0]
 
-    @patch('influxdb_client.InfluxDBClient')
+    @patch("influxdb_client.InfluxDBClient")
     def test_health_check_success(self, mock_client_class):
         """Test health check success"""
         mock_client = Mock()
@@ -364,7 +358,7 @@ class TestInfluxDBManager:
 
         assert is_healthy is True
 
-    @patch('influxdb_client.InfluxDBClient')
+    @patch("influxdb_client.InfluxDBClient")
     def test_health_check_failure(self, mock_client_class):
         """Test health check failure"""
         mock_client = Mock()
@@ -379,7 +373,7 @@ class TestInfluxDBManager:
 
         assert is_healthy is False
 
-    @patch('influxdb_client.InfluxDBClient')
+    @patch("influxdb_client.InfluxDBClient")
     def test_close_connection(self, mock_client_class):
         """Test closing connection"""
         mock_client = Mock()
@@ -390,7 +384,7 @@ class TestInfluxDBManager:
 
         mock_client.close.assert_called_once()
 
-    @patch('influxdb_client.InfluxDBClient')
+    @patch("influxdb_client.InfluxDBClient")
     def test_context_manager(self, mock_client_class):
         """Test using InfluxDBManager as context manager"""
         mock_client = Mock()
@@ -405,7 +399,7 @@ class TestInfluxDBManager:
 class TestInfluxDBManagerIntegration:
     """Integration tests for InfluxDB operations"""
 
-    @patch('influxdb_client.InfluxDBClient')
+    @patch("influxdb_client.InfluxDBClient")
     def test_write_and_query_workflow(self, mock_client_class):
         """Test complete write and query workflow"""
         mock_client = Mock()
@@ -433,9 +427,7 @@ class TestInfluxDBManagerIntegration:
 
         # Write metric
         write_result = manager.write_metric(
-            "productivity",
-            {"user_id": "test-user"},
-            {"score": 85.5}
+            "productivity", {"user_id": "test-user"}, {"score": 85.5}
         )
         assert write_result is True
 
@@ -447,7 +439,7 @@ class TestInfluxDBManagerIntegration:
         assert len(query_results) == 1
         assert query_results[0]["value"] == 85.5
 
-    @patch('influxdb_client.InfluxDBClient')
+    @patch("influxdb_client.InfluxDBClient")
     def test_bulk_operations(self, mock_client_class):
         """Test bulk write and aggregation operations"""
         mock_client = Mock()
@@ -476,14 +468,14 @@ class TestInfluxDBManagerIntegration:
                 "measurement": "productivity",
                 "tags": {"user_id": "user1"},
                 "fields": {"score": 85.5},
-                "time": datetime(2024, 1, 1, 12, 0, 0)
+                "time": datetime(2024, 1, 1, 12, 0, 0),
             },
             {
                 "measurement": "productivity",
                 "tags": {"user_id": "user1"},
                 "fields": {"score": 81.5},
-                "time": datetime(2024, 1, 1, 13, 0, 0)
-            }
+                "time": datetime(2024, 1, 1, 13, 0, 0),
+            },
         ]
 
         bulk_result = manager.write_bulk_metrics(metrics)
@@ -499,7 +491,7 @@ class TestInfluxDBManagerIntegration:
             start_time,
             end_time,
             aggregation="sum",
-            filters={"user_id": "user1"}
+            filters={"user_id": "user1"},
         )
         assert total == 167.0
 
@@ -507,7 +499,7 @@ class TestInfluxDBManagerIntegration:
 class TestInfluxDBGlobalInstance:
     """Test global InfluxDB manager instance"""
 
-    @patch('apps.analytics.influxdb_client.InfluxDBManager')
+    @patch("apps.analytics.influxdb_client.InfluxDBManager")
     def test_global_instance_creation(self, mock_manager_class):
         """Test that global instance is created correctly"""
         # Import should create the global instance
@@ -519,15 +511,15 @@ class TestInfluxDBGlobalInstance:
     def test_global_instance_usage(self):
         """Test using the global instance"""
         # This test verifies the global instance exists and has expected methods
-        assert hasattr(influxdb_manager, 'write_metric')
-        assert hasattr(influxdb_manager, 'query_metrics')
-        assert hasattr(influxdb_manager, 'health_check')
+        assert hasattr(influxdb_manager, "write_metric")
+        assert hasattr(influxdb_manager, "query_metrics")
+        assert hasattr(influxdb_manager, "health_check")
 
 
 class TestInfluxDBErrorHandling:
     """Test error handling and edge cases"""
 
-    @patch('influxdb_client.InfluxDBClient')
+    @patch("influxdb_client.InfluxDBClient")
     def test_write_metric_with_invalid_data(self, mock_client_class):
         """Test writing metrics with invalid data"""
         mock_client = Mock()
@@ -545,7 +537,7 @@ class TestInfluxDBErrorHandling:
         result = manager.write_metric("test", None, {"score": 85.5})
         assert result is False
 
-    @patch('influxdb_client.InfluxDBClient')
+    @patch("influxdb_client.InfluxDBClient")
     def test_query_with_invalid_time_range(self, mock_client_class):
         """Test querying with invalid time range"""
         mock_client = Mock()
@@ -562,7 +554,7 @@ class TestInfluxDBErrorHandling:
         results = manager.query_metrics("productivity", start_time, end_time)
         assert results == []
 
-    @patch('influxdb_client.InfluxDBClient')
+    @patch("influxdb_client.InfluxDBClient")
     def test_connection_failure_handling(self, mock_client_class):
         """Test handling connection failures"""
         mock_client_class.side_effect = Exception("Connection failed")
@@ -577,7 +569,7 @@ class TestInfluxDBErrorHandling:
             # Or raise appropriate exception
             pytest.fail("Should handle connection failure gracefully")
 
-    @patch('influxdb_client.InfluxDBClient')
+    @patch("influxdb_client.InfluxDBClient")
     def test_malformed_query_response(self, mock_client_class):
         """Test handling malformed query responses"""
         mock_client = Mock()

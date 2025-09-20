@@ -4,9 +4,10 @@ from datetime import datetime, timedelta
 from unittest.mock import Mock, patch
 
 import django
-import pytest
 from django.conf import settings
 from django.utils import timezone
+
+import pytest
 
 # Configure Django settings before importing anything else
 if not settings.configured:
@@ -16,7 +17,7 @@ if not settings.configured:
 from rest_framework.test import APIClient
 from rest_framework_simplejwt.tokens import RefreshToken
 
-from apps.analytics.models import Report, MetricDefinition, AnalyticsCache
+from apps.analytics.models import AnalyticsCache, MetricDefinition, Report
 
 
 @pytest.fixture
@@ -49,26 +50,26 @@ def mock_admin_user():
 @pytest.fixture
 def authenticated_client(api_client, mock_user):
     """Mock authenticated client"""
-    with patch('apps.analytics.authentication.verify_jwt_token') as mock_verify:
+    with patch("apps.analytics.authentication.verify_jwt_token") as mock_verify:
         mock_verify.return_value = {
-            'user_id': str(mock_user.id),
-            'email': mock_user.email,
-            'role': mock_user.role
+            "user_id": str(mock_user.id),
+            "email": mock_user.email,
+            "role": mock_user.role,
         }
-        api_client.defaults['HTTP_AUTHORIZATION'] = 'Bearer mock_token'
+        api_client.defaults["HTTP_AUTHORIZATION"] = "Bearer mock_token"
         return api_client
 
 
 @pytest.fixture
 def admin_authenticated_client(api_client, mock_admin_user):
     """Mock admin authenticated client"""
-    with patch('apps.analytics.authentication.verify_jwt_token') as mock_verify:
+    with patch("apps.analytics.authentication.verify_jwt_token") as mock_verify:
         mock_verify.return_value = {
-            'user_id': str(mock_admin_user.id),
-            'email': mock_admin_user.email,
-            'role': mock_admin_user.role
+            "user_id": str(mock_admin_user.id),
+            "email": mock_admin_user.email,
+            "role": mock_admin_user.role,
         }
-        api_client.defaults['HTTP_AUTHORIZATION'] = 'Bearer mock_admin_token'
+        api_client.defaults["HTTP_AUTHORIZATION"] = "Bearer mock_admin_token"
         return api_client
 
 
@@ -83,9 +84,9 @@ def metric_definition():
             "weight_sessions": 0.4,
             "weight_commits": 0.6,
             "baseline_sessions_per_day": 3,
-            "baseline_commits_per_day": 5
+            "baseline_commits_per_day": 5,
         },
-        is_active=True
+        is_active=True,
     )
 
 
@@ -98,10 +99,10 @@ def sample_report(mock_user):
         config={
             "start_date": "2024-01-01",
             "end_date": "2024-01-31",
-            "include_weekends": False
+            "include_weekends": False,
         },
         created_by=mock_user.id,
-        status="pending"
+        status="pending",
     )
 
 
@@ -111,10 +112,7 @@ def completed_report(mock_user):
     return Report.objects.create(
         name="Completed Test Report",
         type="productivity",
-        config={
-            "start_date": "2024-01-01",
-            "end_date": "2024-01-31"
-        },
+        config={"start_date": "2024-01-01", "end_date": "2024-01-31"},
         created_by=mock_user.id,
         status="completed",
         generated_at=timezone.now(),
@@ -123,13 +121,10 @@ def completed_report(mock_user):
                 "productivity_score": 85.5,
                 "session_count": 120,
                 "commit_count": 45,
-                "avg_session_duration": 45.2
+                "avg_session_duration": 45.2,
             },
-            "summary": {
-                "total_active_days": 22,
-                "avg_productivity_score": 82.3
-            }
-        }
+            "summary": {"total_active_days": 22, "avg_productivity_score": 82.3},
+        },
     )
 
 
@@ -139,26 +134,22 @@ def analytics_cache():
     return AnalyticsCache.objects.create(
         cache_key="test_metric_123",
         cache_type="metric_calculation",
-        data={
-            "result": 85.5,
-            "calculation_time": 0.45,
-            "metadata": {"source": "test"}
-        },
-        expires_at=timezone.now() + timedelta(hours=1)
+        data={"result": 85.5, "calculation_time": 0.45, "metadata": {"source": "test"}},
+        expires_at=timezone.now() + timedelta(hours=1),
     )
 
 
 @pytest.fixture
 def mock_influxdb_client():
     """Mock InfluxDB client"""
-    with patch('apps.analytics.influxdb_client.InfluxDBManager') as mock_client:
+    with patch("apps.analytics.influxdb_client.InfluxDBManager") as mock_client:
         mock_instance = Mock()
         mock_instance.query_metrics.return_value = [
             {
                 "time": "2024-01-01T10:00:00Z",
                 "user_id": "test-user-id",
                 "session_duration": 30,
-                "commits": 3
+                "commits": 3,
             }
         ]
         mock_instance.write_metric.return_value = True
@@ -169,8 +160,14 @@ def mock_influxdb_client():
 @pytest.fixture
 def mock_service_clients():
     """Mock external service clients"""
-    with patch('apps.analytics.service_integration.MonitoringServiceClient') as mock_monitoring, \
-         patch('apps.analytics.service_integration.ManagementServiceClient') as mock_management:
+    with (
+        patch(
+            "apps.analytics.service_integration.MonitoringServiceClient"
+        ) as mock_monitoring,
+        patch(
+            "apps.analytics.service_integration.ManagementServiceClient"
+        ) as mock_management,
+    ):
 
         # Mock monitoring service responses
         mock_monitoring_instance = Mock()
@@ -181,7 +178,7 @@ def mock_service_clients():
                     "user_id": "test-user-id",
                     "start_time": "2024-01-01T09:00:00Z",
                     "end_time": "2024-01-01T10:30:00Z",
-                    "duration": 90
+                    "duration": 90,
                 }
             ]
         }
@@ -195,7 +192,7 @@ def mock_service_clients():
                     "id": "project-1",
                     "name": "Test Project",
                     "commits": 25,
-                    "last_activity": "2024-01-01T15:00:00Z"
+                    "last_activity": "2024-01-01T15:00:00Z",
                 }
             ]
         }
@@ -203,7 +200,7 @@ def mock_service_clients():
 
         yield {
             "monitoring": mock_monitoring_instance,
-            "management": mock_management_instance
+            "management": mock_management_instance,
         }
 
 
@@ -213,38 +210,34 @@ def sample_dashboard_data():
     return {
         "period": {
             "start_date": "2024-01-01T00:00:00Z",
-            "end_date": "2024-01-31T23:59:59Z"
+            "end_date": "2024-01-31T23:59:59Z",
         },
         "metrics": {
             "productivity": {
                 "score": 85.5,
                 "trend": "increasing",
                 "sessions_count": 120,
-                "avg_session_duration": 45.2
+                "avg_session_duration": 45.2,
             },
             "code_quality": {
                 "score": 78.3,
                 "complexity_avg": 2.4,
-                "test_coverage": 92.1
+                "test_coverage": 92.1,
             },
-            "collaboration": {
-                "score": 88.7,
-                "pr_reviews": 15,
-                "comments": 48
-            }
+            "collaboration": {"score": 88.7, "pr_reviews": 15, "comments": 48},
         },
         "charts": {
             "productivity_trend": [
                 {"date": "2024-01-01", "value": 80.0},
                 {"date": "2024-01-02", "value": 82.5},
-                {"date": "2024-01-03", "value": 85.0}
+                {"date": "2024-01-03", "value": 85.0},
             ]
         },
         "summary": {
             "total_sessions": 120,
             "total_commits": 45,
-            "avg_daily_productivity": 82.3
-        }
+            "avg_daily_productivity": 82.3,
+        },
     }
 
 
@@ -261,5 +254,5 @@ def mock_report_export_data():
         "pdf_content": b"Mock PDF content",
         "excel_content": b"Mock Excel content",
         "csv_content": "Metric,Value\nproductivity_score,85.5\nsession_count,120",
-        "json_content": '{"metrics": {"productivity_score": 85.5}}'
+        "json_content": '{"metrics": {"productivity_score": 85.5}}',
     }

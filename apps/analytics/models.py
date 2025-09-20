@@ -58,23 +58,38 @@ class MetricDefinition(RetryableModelMixin, TimestampMixin, models.Model):
 
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     name = models.CharField(max_length=255, unique=True)
-    description = models.TextField(help_text="Detailed description of what this metric measures")
-    calculation_method = models.CharField(max_length=50, choices=CALCULATION_METHOD_CHOICES)
-    category = models.CharField(max_length=50, choices=CATEGORY_CHOICES, default="productivity")
+    description = models.TextField(
+        help_text="Detailed description of what this metric measures"
+    )
+    calculation_method = models.CharField(
+        max_length=50, choices=CALCULATION_METHOD_CHOICES
+    )
+    category = models.CharField(
+        max_length=50, choices=CATEGORY_CHOICES, default="productivity"
+    )
     parameters = models.JSONField(
         default=dict,
         blank=True,
-        help_text="JSON configuration for metric calculation (formulas, filters, etc.)"
+        help_text="JSON configuration for metric calculation (formulas, filters, etc.)",
     )
     data_sources = models.JSONField(
         default=list,
         blank=True,
-        help_text="List of data sources this metric depends on (monitoring, management, etc.)"
+        help_text="List of data sources this metric depends on (monitoring, management, etc.)",
     )
-    unit = models.CharField(max_length=50, null=True, blank=True, help_text="Unit of measurement (hours, %, count, etc.)")
+    unit = models.CharField(
+        max_length=50,
+        null=True,
+        blank=True,
+        help_text="Unit of measurement (hours, %, count, etc.)",
+    )
     is_active = models.BooleanField(default=True)
-    requires_ml = models.BooleanField(default=False, help_text="Whether this metric requires ML processing")
-    cache_duration = models.IntegerField(default=300, help_text="Cache duration in seconds")
+    requires_ml = models.BooleanField(
+        default=False, help_text="Whether this metric requires ML processing"
+    )
+    cache_duration = models.IntegerField(
+        default=300, help_text="Cache duration in seconds"
+    )
 
     objects = RetryableManager()
 
@@ -138,21 +153,41 @@ class Report(RetryableModelMixin, TimestampMixin, models.Model):
     type = models.CharField(max_length=50, choices=REPORT_TYPE_CHOICES)
     config = models.JSONField(
         default=dict,
-        help_text="Report configuration including filters, date ranges, metrics, etc."
+        help_text="Report configuration including filters, date ranges, metrics, etc.",
     )
     created_by = models.UUIDField(help_text="Reference to auth.users.id")
-    company_id = models.UUIDField(null=True, blank=True, help_text="Reference to auth.companies.id")
-    team_id = models.UUIDField(null=True, blank=True, help_text="Reference to management.teams.id")
-    project_id = models.UUIDField(null=True, blank=True, help_text="Reference to management.projects.id")
+    company_id = models.UUIDField(
+        null=True, blank=True, help_text="Reference to auth.companies.id"
+    )
+    team_id = models.UUIDField(
+        null=True, blank=True, help_text="Reference to management.teams.id"
+    )
+    project_id = models.UUIDField(
+        null=True, blank=True, help_text="Reference to management.projects.id"
+    )
     status = models.CharField(max_length=20, choices=STATUS_CHOICES, default="pending")
     format = models.CharField(max_length=10, choices=FORMAT_CHOICES, default="json")
     generated_at = models.DateTimeField(null=True, blank=True)
-    file_path = models.CharField(max_length=500, null=True, blank=True, help_text="Path to generated report file")
-    file_size = models.BigIntegerField(null=True, blank=True, help_text="File size in bytes")
-    data = models.JSONField(null=True, blank=True, help_text="Report data (for JSON reports)")
+    file_path = models.CharField(
+        max_length=500, null=True, blank=True, help_text="Path to generated report file"
+    )
+    file_size = models.BigIntegerField(
+        null=True, blank=True, help_text="File size in bytes"
+    )
+    data = models.JSONField(
+        null=True, blank=True, help_text="Report data (for JSON reports)"
+    )
     error_message = models.TextField(null=True, blank=True)
-    execution_time = models.DecimalField(max_digits=10, decimal_places=3, null=True, blank=True, help_text="Execution time in seconds")
-    expires_at = models.DateTimeField(null=True, blank=True, help_text="When this report expires")
+    execution_time = models.DecimalField(
+        max_digits=10,
+        decimal_places=3,
+        null=True,
+        blank=True,
+        help_text="Execution time in seconds",
+    )
+    expires_at = models.DateTimeField(
+        null=True, blank=True, help_text="When this report expires"
+    )
 
     objects = RetryableManager()
 
@@ -190,7 +225,9 @@ class Report(RetryableModelMixin, TimestampMixin, models.Model):
         self.status = "generating"
         self.save()
 
-    def mark_as_completed(self, file_path=None, file_size=None, data=None, execution_time=None):
+    def mark_as_completed(
+        self, file_path=None, file_size=None, data=None, execution_time=None
+    ):
         """Mark report as completed."""
         self.status = "completed"
         self.generated_at = timezone.now()
@@ -237,12 +274,20 @@ class AnalyticsCache(RetryableModelMixin, TimestampMixin, models.Model):
     cache_key = models.CharField(max_length=255, unique=True, db_index=True)
     cache_type = models.CharField(max_length=50, choices=CACHE_TYPE_CHOICES)
     data = models.JSONField(help_text="Cached data")
-    metadata = models.JSONField(default=dict, blank=True, help_text="Cache metadata (source, parameters, etc.)")
+    metadata = models.JSONField(
+        default=dict, blank=True, help_text="Cache metadata (source, parameters, etc.)"
+    )
     expires_at = models.DateTimeField()
     hit_count = models.IntegerField(default=0)
     last_accessed = models.DateTimeField(auto_now=True)
-    data_size = models.IntegerField(null=True, blank=True, help_text="Size of cached data in bytes")
-    source_metric_id = models.UUIDField(null=True, blank=True, help_text="Reference to metric_definitions.id if applicable")
+    data_size = models.IntegerField(
+        null=True, blank=True, help_text="Size of cached data in bytes"
+    )
+    source_metric_id = models.UUIDField(
+        null=True,
+        blank=True,
+        help_text="Reference to metric_definitions.id if applicable",
+    )
 
     objects = RetryableManager()
 
@@ -290,9 +335,9 @@ class AnalyticsCache(RetryableModelMixin, TimestampMixin, models.Model):
         """Get cache statistics."""
         total_entries = cls.objects.count()
         expired_entries = cls.objects.filter(expires_at__lt=timezone.now()).count()
-        total_size = cls.objects.aggregate(
-            total_size=models.Sum("data_size")
-        )["total_size"] or 0
+        total_size = (
+            cls.objects.aggregate(total_size=models.Sum("data_size"))["total_size"] or 0
+        )
 
         return {
             "total_entries": total_entries,
@@ -306,9 +351,9 @@ class AnalyticsCache(RetryableModelMixin, TimestampMixin, models.Model):
         # Calculate data size if not set
         if not self.data_size and self.data:
             import json
-            self.data_size = len(json.dumps(self.data).encode('utf-8'))
-        super().save(*args, **kwargs)
 
+            self.data_size = len(json.dumps(self.data).encode("utf-8"))
+        super().save(*args, **kwargs)
 
 
 class AlertRule(RetryableModelMixin, TimestampMixin, models.Model):
@@ -342,23 +387,25 @@ class AlertRule(RetryableModelMixin, TimestampMixin, models.Model):
         MetricDefinition,
         on_delete=models.CASCADE,
         related_name="alert_rules",
-        db_column="metric_definition_id"
+        db_column="metric_definition_id",
     )
     condition = models.CharField(max_length=20, choices=CONDITION_CHOICES)
     threshold_value = models.DecimalField(max_digits=20, decimal_places=6)
-    severity = models.CharField(max_length=20, choices=SEVERITY_CHOICES, default="medium")
+    severity = models.CharField(
+        max_length=20, choices=SEVERITY_CHOICES, default="medium"
+    )
     is_active = models.BooleanField(default=True)
     notification_config = models.JSONField(
         default=dict,
         blank=True,
-        help_text="Notification configuration (emails, webhooks, etc.)"
+        help_text="Notification configuration (emails, webhooks, etc.)",
     )
     context_filters = models.JSONField(
-        default=dict,
-        blank=True,
-        help_text="Context filters for when this rule applies"
+        default=dict, blank=True, help_text="Context filters for when this rule applies"
     )
-    cooldown_minutes = models.IntegerField(default=60, help_text="Cooldown period before re-triggering")
+    cooldown_minutes = models.IntegerField(
+        default=60, help_text="Cooldown period before re-triggering"
+    )
 
     objects = RetryableManager()
 
@@ -388,8 +435,13 @@ class TimeSeriesData(RetryableModelMixin, models.Model):
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
 
     # Measurement identification
-    measurement = models.CharField(max_length=255, help_text="Measurement name (e.g., 'code_commits', 'build_duration')")
-    source = models.CharField(max_length=255, help_text="Data source (e.g., 'github', 'jenkins', 'jira')")
+    measurement = models.CharField(
+        max_length=255,
+        help_text="Measurement name (e.g., 'code_commits', 'build_duration')",
+    )
+    source = models.CharField(
+        max_length=255, help_text="Data source (e.g., 'github', 'jenkins', 'jira')"
+    )
 
     # Time dimension
     timestamp = models.DateTimeField(help_text="When the measurement was taken")
@@ -401,13 +453,22 @@ class TimeSeriesData(RetryableModelMixin, models.Model):
     value_bool = models.BooleanField(null=True, blank=True, help_text="Boolean value")
 
     # Metadata and tags
-    tags = models.JSONField(default=dict, help_text="Tags as key-value pairs (e.g., {'user': 'john', 'repo': 'myproject'})")
+    tags = models.JSONField(
+        default=dict,
+        help_text="Tags as key-value pairs (e.g., {'user': 'john', 'repo': 'myproject'})",
+    )
     fields = models.JSONField(default=dict, help_text="Additional field data")
 
     # Context information
-    user_id = models.CharField(max_length=255, null=True, blank=True, help_text="User ID if applicable")
-    project_id = models.CharField(max_length=255, null=True, blank=True, help_text="Project ID if applicable")
-    team_id = models.CharField(max_length=255, null=True, blank=True, help_text="Team ID if applicable")
+    user_id = models.CharField(
+        max_length=255, null=True, blank=True, help_text="User ID if applicable"
+    )
+    project_id = models.CharField(
+        max_length=255, null=True, blank=True, help_text="Project ID if applicable"
+    )
+    team_id = models.CharField(
+        max_length=255, null=True, blank=True, help_text="Team ID if applicable"
+    )
 
     # Tracking
     created_at = models.DateTimeField(auto_now_add=True)
@@ -445,8 +506,18 @@ class TimeSeriesData(RetryableModelMixin, models.Model):
         return None
 
     @classmethod
-    def write_point(cls, measurement, source, value, timestamp=None, tags=None, fields=None,
-                   user_id=None, project_id=None, team_id=None):
+    def write_point(
+        cls,
+        measurement,
+        source,
+        value,
+        timestamp=None,
+        tags=None,
+        fields=None,
+        user_id=None,
+        project_id=None,
+        team_id=None,
+    ):
         """
         Write a time series data point (replaces InfluxDB write functionality)
         """
@@ -454,38 +525,45 @@ class TimeSeriesData(RetryableModelMixin, models.Model):
             timestamp = timezone.now()
 
         data = {
-            'measurement': measurement,
-            'source': source,
-            'timestamp': timestamp,
-            'tags': tags or {},
-            'fields': fields or {},
-            'user_id': user_id,
-            'project_id': project_id,
-            'team_id': team_id,
+            "measurement": measurement,
+            "source": source,
+            "timestamp": timestamp,
+            "tags": tags or {},
+            "fields": fields or {},
+            "user_id": user_id,
+            "project_id": project_id,
+            "team_id": team_id,
         }
 
         # Set appropriate value field based on type
         if isinstance(value, float):
-            data['value_float'] = value
+            data["value_float"] = value
         elif isinstance(value, int):
-            data['value_int'] = value
+            data["value_int"] = value
         elif isinstance(value, bool):
-            data['value_bool'] = value
+            data["value_bool"] = value
         else:
-            data['value_string'] = str(value)
+            data["value_string"] = str(value)
 
         return cls.objects.create(**data)
 
     @classmethod
-    def query_range(cls, measurement, start_time, end_time, source=None, user_id=None,
-                   project_id=None, team_id=None, tags=None):
+    def query_range(
+        cls,
+        measurement,
+        start_time,
+        end_time,
+        source=None,
+        user_id=None,
+        project_id=None,
+        team_id=None,
+        tags=None,
+    ):
         """
         Query time series data for a time range (replaces InfluxDB query functionality)
         """
         queryset = cls.objects.filter(
-            measurement=measurement,
-            timestamp__gte=start_time,
-            timestamp__lte=end_time
+            measurement=measurement, timestamp__gte=start_time, timestamp__lte=end_time
         )
 
         if source:
@@ -502,7 +580,7 @@ class TimeSeriesData(RetryableModelMixin, models.Model):
             for key, value in tags.items():
                 queryset = queryset.filter(tags__contains={key: value})
 
-        return queryset.order_by('timestamp')
+        return queryset.order_by("timestamp")
 
 
 class MetricSnapshot(RetryableModelMixin, models.Model):
@@ -515,9 +593,7 @@ class MetricSnapshot(RetryableModelMixin, models.Model):
 
     # Metric identification
     metric_definition = models.ForeignKey(
-        MetricDefinition,
-        on_delete=models.CASCADE,
-        related_name='snapshots'
+        MetricDefinition, on_delete=models.CASCADE, related_name="snapshots"
     )
 
     # Snapshot metadata
@@ -526,8 +602,12 @@ class MetricSnapshot(RetryableModelMixin, models.Model):
     period_end = models.DateTimeField(help_text="End of the measurement period")
 
     # Calculated values
-    value = models.DecimalField(max_digits=20, decimal_places=6, help_text="Calculated metric value")
-    raw_data_count = models.IntegerField(help_text="Number of data points used in calculation")
+    value = models.DecimalField(
+        max_digits=20, decimal_places=6, help_text="Calculated metric value"
+    )
+    raw_data_count = models.IntegerField(
+        help_text="Number of data points used in calculation"
+    )
 
     # Context
     user_id = models.CharField(max_length=255, null=True, blank=True)
@@ -535,8 +615,12 @@ class MetricSnapshot(RetryableModelMixin, models.Model):
     team_id = models.CharField(max_length=255, null=True, blank=True)
 
     # Additional metadata
-    calculation_metadata = models.JSONField(default=dict, help_text="Additional calculation details")
-    confidence_score = models.FloatField(null=True, blank=True, help_text="Confidence in the calculation (0-1)")
+    calculation_metadata = models.JSONField(
+        default=dict, help_text="Additional calculation details"
+    )
+    confidence_score = models.FloatField(
+        null=True, blank=True, help_text="Confidence in the calculation (0-1)"
+    )
 
     # Tracking
     created_at = models.DateTimeField(auto_now_add=True)

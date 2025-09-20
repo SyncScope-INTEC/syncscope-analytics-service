@@ -1,13 +1,14 @@
-import pytest
-from unittest.mock import Mock, patch
-import requests
 from datetime import datetime
+from unittest.mock import Mock, patch
+
+import pytest
+import requests
 
 from apps.analytics.service_integration import (
-    MonitoringServiceClient,
-    ManagementServiceClient,
     AuthServiceClient,
-    ServiceIntegrationError
+    ManagementServiceClient,
+    MonitoringServiceClient,
+    ServiceIntegrationError,
 )
 
 
@@ -19,10 +20,10 @@ class TestMonitoringServiceClient:
         client = MonitoringServiceClient()
 
         assert client.base_url is not None
-        assert hasattr(client, 'timeout')
-        assert hasattr(client, 'session')
+        assert hasattr(client, "timeout")
+        assert hasattr(client, "session")
 
-    @patch('requests.Session.get')
+    @patch("requests.Session.get")
     def test_get_user_sessions_success(self, mock_get):
         """Test successful user sessions retrieval"""
         mock_response = Mock()
@@ -35,7 +36,7 @@ class TestMonitoringServiceClient:
                     "start_time": "2024-01-01T09:00:00Z",
                     "end_time": "2024-01-01T10:30:00Z",
                     "duration": 90,
-                    "project_id": "test-project"
+                    "project_id": "test-project",
                 },
                 {
                     "id": "session-2",
@@ -43,8 +44,8 @@ class TestMonitoringServiceClient:
                     "start_time": "2024-01-01T14:00:00Z",
                     "end_time": "2024-01-01T15:00:00Z",
                     "duration": 60,
-                    "project_id": "test-project"
-                }
+                    "project_id": "test-project",
+                },
             ]
         }
         mock_get.return_value = mock_response
@@ -58,7 +59,7 @@ class TestMonitoringServiceClient:
 
         mock_get.assert_called_once()
 
-    @patch('requests.Session.get')
+    @patch("requests.Session.get")
     def test_get_user_sessions_not_found(self, mock_get):
         """Test user sessions retrieval when user not found"""
         mock_response = Mock()
@@ -71,7 +72,7 @@ class TestMonitoringServiceClient:
         with pytest.raises(ServiceIntegrationError):
             client.get_user_sessions("nonexistent-user", "2024-01-01", "2024-01-31")
 
-    @patch('requests.Session.get')
+    @patch("requests.Session.get")
     def test_get_user_sessions_server_error(self, mock_get):
         """Test user sessions retrieval with server error"""
         mock_response = Mock()
@@ -84,7 +85,7 @@ class TestMonitoringServiceClient:
         with pytest.raises(ServiceIntegrationError):
             client.get_user_sessions("test-user-id", "2024-01-01", "2024-01-31")
 
-    @patch('requests.Session.get')
+    @patch("requests.Session.get")
     def test_get_user_sessions_timeout(self, mock_get):
         """Test user sessions retrieval with timeout"""
         mock_get.side_effect = requests.Timeout("Request timeout")
@@ -94,7 +95,7 @@ class TestMonitoringServiceClient:
         with pytest.raises(ServiceIntegrationError):
             client.get_user_sessions("test-user-id", "2024-01-01", "2024-01-31")
 
-    @patch('requests.Session.get')
+    @patch("requests.Session.get")
     def test_get_user_sessions_connection_error(self, mock_get):
         """Test user sessions retrieval with connection error"""
         mock_get.side_effect = requests.ConnectionError("Connection failed")
@@ -104,7 +105,7 @@ class TestMonitoringServiceClient:
         with pytest.raises(ServiceIntegrationError):
             client.get_user_sessions("test-user-id", "2024-01-01", "2024-01-31")
 
-    @patch('requests.Session.get')
+    @patch("requests.Session.get")
     def test_get_project_activity_success(self, mock_get):
         """Test successful project activity retrieval"""
         mock_response = Mock()
@@ -116,24 +117,23 @@ class TestMonitoringServiceClient:
                     "user_id": "test-user-id",
                     "action": "file_edit",
                     "file_path": "/src/main.py",
-                    "duration": 300
+                    "duration": 300,
                 }
             ],
-            "summary": {
-                "total_actions": 1,
-                "total_duration": 300
-            }
+            "summary": {"total_actions": 1, "total_duration": 300},
         }
         mock_get.return_value = mock_response
 
         client = MonitoringServiceClient()
-        result = client.get_project_activity("test-project-id", "2024-01-01", "2024-01-31")
+        result = client.get_project_activity(
+            "test-project-id", "2024-01-01", "2024-01-31"
+        )
 
         assert "activity" in result
         assert "summary" in result
         assert len(result["activity"]) == 1
 
-    @patch('requests.Session.get')
+    @patch("requests.Session.get")
     def test_get_team_metrics_success(self, mock_get):
         """Test successful team metrics retrieval"""
         mock_response = Mock()
@@ -143,16 +143,16 @@ class TestMonitoringServiceClient:
                 "active_users": 5,
                 "total_sessions": 120,
                 "avg_session_duration": 85.5,
-                "productivity_score": 78.3
+                "productivity_score": 78.3,
             },
             "user_metrics": [
                 {
                     "user_id": "user-1",
                     "sessions": 25,
                     "avg_duration": 90.0,
-                    "productivity_score": 82.1
+                    "productivity_score": 82.1,
                 }
-            ]
+            ],
         }
         mock_get.return_value = mock_response
 
@@ -163,7 +163,7 @@ class TestMonitoringServiceClient:
         assert "user_metrics" in result
         assert result["team_metrics"]["active_users"] == 5
 
-    @patch('requests.Session.get')
+    @patch("requests.Session.get")
     def test_health_check_success(self, mock_get):
         """Test successful health check"""
         mock_response = Mock()
@@ -176,7 +176,7 @@ class TestMonitoringServiceClient:
 
         assert result is True
 
-    @patch('requests.Session.get')
+    @patch("requests.Session.get")
     def test_health_check_unhealthy(self, mock_get):
         """Test health check when service is unhealthy"""
         mock_response = Mock()
@@ -197,10 +197,10 @@ class TestManagementServiceClient:
         client = ManagementServiceClient()
 
         assert client.base_url is not None
-        assert hasattr(client, 'timeout')
-        assert hasattr(client, 'session')
+        assert hasattr(client, "timeout")
+        assert hasattr(client, "session")
 
-    @patch('requests.Session.get')
+    @patch("requests.Session.get")
     def test_get_user_projects_success(self, mock_get):
         """Test successful user projects retrieval"""
         mock_response = Mock()
@@ -212,15 +212,15 @@ class TestManagementServiceClient:
                     "name": "Test Project 1",
                     "commits": 25,
                     "lines_of_code": 1500,
-                    "last_activity": "2024-01-01T15:00:00Z"
+                    "last_activity": "2024-01-01T15:00:00Z",
                 },
                 {
                     "id": "project-2",
                     "name": "Test Project 2",
                     "commits": 18,
                     "lines_of_code": 980,
-                    "last_activity": "2024-01-01T12:00:00Z"
-                }
+                    "last_activity": "2024-01-01T12:00:00Z",
+                },
             ]
         }
         mock_get.return_value = mock_response
@@ -232,7 +232,7 @@ class TestManagementServiceClient:
         assert len(result["projects"]) == 2
         assert result["projects"][0]["commits"] == 25
 
-    @patch('requests.Session.get')
+    @patch("requests.Session.get")
     def test_get_user_commits_success(self, mock_get):
         """Test successful user commits retrieval"""
         mock_response = Mock()
@@ -246,7 +246,7 @@ class TestManagementServiceClient:
                     "timestamp": "2024-01-01T10:00:00Z",
                     "lines_added": 50,
                     "lines_deleted": 10,
-                    "files_changed": 3
+                    "files_changed": 3,
                 },
                 {
                     "id": "commit-2",
@@ -255,14 +255,14 @@ class TestManagementServiceClient:
                     "timestamp": "2024-01-01T14:00:00Z",
                     "lines_added": 30,
                     "lines_deleted": 5,
-                    "files_changed": 2
-                }
+                    "files_changed": 2,
+                },
             ],
             "summary": {
                 "total_commits": 2,
                 "total_lines_added": 80,
-                "total_lines_deleted": 15
-            }
+                "total_lines_deleted": 15,
+            },
         }
         mock_get.return_value = mock_response
 
@@ -274,33 +274,24 @@ class TestManagementServiceClient:
         assert len(result["commits"]) == 2
         assert result["summary"]["total_commits"] == 2
 
-    @patch('requests.Session.get')
+    @patch("requests.Session.get")
     def test_get_code_quality_metrics_success(self, mock_get):
         """Test successful code quality metrics retrieval"""
         mock_response = Mock()
         mock_response.status_code = 200
         mock_response.json.return_value = {
-            "complexity": {
-                "average": 2.5,
-                "max": 8,
-                "files": 45
-            },
+            "complexity": {"average": 2.5, "max": 8, "files": 45},
             "coverage": {
                 "percentage": 87.5,
                 "lines_covered": 1250,
-                "total_lines": 1429
+                "total_lines": 1429,
             },
             "duplication": {
                 "percentage": 3.2,
                 "duplicated_lines": 46,
-                "total_lines": 1429
+                "total_lines": 1429,
             },
-            "issues": {
-                "critical": 0,
-                "major": 2,
-                "minor": 8,
-                "info": 15
-            }
+            "issues": {"critical": 0, "major": 2, "minor": 8, "info": 15},
         }
         mock_get.return_value = mock_response
 
@@ -312,7 +303,7 @@ class TestManagementServiceClient:
         assert "duplication" in result
         assert result["coverage"]["percentage"] == 87.5
 
-    @patch('requests.Session.get')
+    @patch("requests.Session.get")
     def test_get_collaboration_metrics_success(self, mock_get):
         """Test successful collaboration metrics retrieval"""
         mock_response = Mock()
@@ -322,30 +313,24 @@ class TestManagementServiceClient:
                 "created": 8,
                 "reviewed": 15,
                 "merged": 12,
-                "avg_review_time": 24.5
+                "avg_review_time": 24.5,
             },
-            "comments": {
-                "pr_comments": 45,
-                "issue_comments": 23,
-                "code_comments": 18
-            },
-            "meetings": {
-                "attended": 8,
-                "organized": 2,
-                "total_hours": 12.5
-            }
+            "comments": {"pr_comments": 45, "issue_comments": 23, "code_comments": 18},
+            "meetings": {"attended": 8, "organized": 2, "total_hours": 12.5},
         }
         mock_get.return_value = mock_response
 
         client = ManagementServiceClient()
-        result = client.get_collaboration_metrics("test-user-id", "2024-01-01", "2024-01-31")
+        result = client.get_collaboration_metrics(
+            "test-user-id", "2024-01-01", "2024-01-31"
+        )
 
         assert "pull_requests" in result
         assert "comments" in result
         assert "meetings" in result
         assert result["pull_requests"]["created"] == 8
 
-    @patch('requests.Session.get')
+    @patch("requests.Session.get")
     def test_get_project_statistics_success(self, mock_get):
         """Test successful project statistics retrieval"""
         mock_response = Mock()
@@ -355,18 +340,18 @@ class TestManagementServiceClient:
                 "total_commits": 245,
                 "total_contributors": 8,
                 "lines_of_code": 15420,
-                "files": 89
+                "files": 89,
             },
             "activity": {
                 "commits_this_week": 12,
                 "commits_this_month": 45,
-                "active_contributors": 5
+                "active_contributors": 5,
             },
             "health": {
                 "test_coverage": 92.1,
                 "code_quality_score": 78.5,
-                "security_score": 85.2
-            }
+                "security_score": 85.2,
+            },
         }
         mock_get.return_value = mock_response
 
@@ -387,10 +372,10 @@ class TestAuthServiceClient:
         client = AuthServiceClient()
 
         assert client.base_url is not None
-        assert hasattr(client, 'timeout')
-        assert hasattr(client, 'session')
+        assert hasattr(client, "timeout")
+        assert hasattr(client, "session")
 
-    @patch('requests.Session.post')
+    @patch("requests.Session.post")
     def test_verify_token_success(self, mock_post):
         """Test successful token verification"""
         mock_response = Mock()
@@ -399,7 +384,7 @@ class TestAuthServiceClient:
             "valid": True,
             "user_id": "test-user-id",
             "email": "test@example.com",
-            "role": "developer"
+            "role": "developer",
         }
         mock_post.return_value = mock_response
 
@@ -410,15 +395,12 @@ class TestAuthServiceClient:
         assert result["user_id"] == "test-user-id"
         assert result["role"] == "developer"
 
-    @patch('requests.Session.post')
+    @patch("requests.Session.post")
     def test_verify_token_invalid(self, mock_post):
         """Test token verification with invalid token"""
         mock_response = Mock()
         mock_response.status_code = 401
-        mock_response.json.return_value = {
-            "valid": False,
-            "error": "Invalid token"
-        }
+        mock_response.json.return_value = {"valid": False, "error": "Invalid token"}
         mock_post.return_value = mock_response
 
         client = AuthServiceClient()
@@ -427,7 +409,7 @@ class TestAuthServiceClient:
         assert result["valid"] is False
         assert "error" in result
 
-    @patch('requests.Session.get')
+    @patch("requests.Session.get")
     def test_get_user_info_success(self, mock_get):
         """Test successful user info retrieval"""
         mock_response = Mock()
@@ -438,10 +420,7 @@ class TestAuthServiceClient:
             "first_name": "Test",
             "last_name": "User",
             "role": "developer",
-            "company": {
-                "id": "company-1",
-                "name": "Test Company"
-            }
+            "company": {"id": "company-1", "name": "Test Company"},
         }
         mock_get.return_value = mock_response
 
@@ -452,7 +431,7 @@ class TestAuthServiceClient:
         assert result["email"] == "test@example.com"
         assert result["company"]["name"] == "Test Company"
 
-    @patch('requests.Session.get')
+    @patch("requests.Session.get")
     def test_get_user_permissions_success(self, mock_get):
         """Test successful user permissions retrieval"""
         mock_response = Mock()
@@ -460,15 +439,8 @@ class TestAuthServiceClient:
         mock_response.json.return_value = {
             "user_id": "test-user-id",
             "role": "developer",
-            "permissions": [
-                "view_analytics",
-                "create_reports",
-                "view_own_data"
-            ],
-            "restrictions": {
-                "can_view_all_users": False,
-                "can_export_data": True
-            }
+            "permissions": ["view_analytics", "create_reports", "view_own_data"],
+            "restrictions": {"can_view_all_users": False, "can_export_data": True},
         }
         mock_get.return_value = mock_response
 
@@ -483,7 +455,7 @@ class TestAuthServiceClient:
 class TestServiceIntegrationErrorHandling:
     """Test error handling in service integration"""
 
-    @patch('requests.Session.get')
+    @patch("requests.Session.get")
     def test_service_timeout_handling(self, mock_get):
         """Test handling of service timeouts"""
         mock_get.side_effect = requests.Timeout("Request timeout")
@@ -495,7 +467,7 @@ class TestServiceIntegrationErrorHandling:
 
         assert "timeout" in str(exc_info.value).lower()
 
-    @patch('requests.Session.get')
+    @patch("requests.Session.get")
     def test_service_connection_error_handling(self, mock_get):
         """Test handling of service connection errors"""
         mock_get.side_effect = requests.ConnectionError("Connection failed")
@@ -507,7 +479,7 @@ class TestServiceIntegrationErrorHandling:
 
         assert "connection" in str(exc_info.value).lower()
 
-    @patch('requests.Session.post')
+    @patch("requests.Session.post")
     def test_service_http_error_handling(self, mock_post):
         """Test handling of HTTP errors"""
         mock_response = Mock()
@@ -522,7 +494,7 @@ class TestServiceIntegrationErrorHandling:
 
         assert "500" in str(exc_info.value)
 
-    @patch('requests.Session.get')
+    @patch("requests.Session.get")
     def test_service_invalid_json_handling(self, mock_get):
         """Test handling of invalid JSON responses"""
         mock_response = Mock()
@@ -541,7 +513,7 @@ class TestServiceIntegrationErrorHandling:
 class TestServiceIntegrationConfiguration:
     """Test service integration configuration"""
 
-    @patch('django.conf.settings')
+    @patch("django.conf.settings")
     def test_monitoring_service_configuration(self, mock_settings):
         """Test MonitoringServiceClient configuration"""
         mock_settings.MONITORING_SERVICE_URL = "http://test-monitoring:8000"
@@ -552,7 +524,7 @@ class TestServiceIntegrationConfiguration:
         assert "test-monitoring" in client.base_url
         assert client.timeout == 30
 
-    @patch('django.conf.settings')
+    @patch("django.conf.settings")
     def test_management_service_configuration(self, mock_settings):
         """Test ManagementServiceClient configuration"""
         mock_settings.MANAGEMENT_SERVICE_URL = "http://test-management:8000"
@@ -563,7 +535,7 @@ class TestServiceIntegrationConfiguration:
         assert "test-management" in client.base_url
         assert client.timeout == 45
 
-    @patch('django.conf.settings')
+    @patch("django.conf.settings")
     def test_auth_service_configuration(self, mock_settings):
         """Test AuthServiceClient configuration"""
         mock_settings.AUTH_SERVICE_URL = "http://test-auth:8000"
@@ -589,7 +561,7 @@ class TestServiceIntegrationConfiguration:
 class TestServiceIntegrationRetry:
     """Test retry logic in service integration"""
 
-    @patch('requests.Session.get')
+    @patch("requests.Session.get")
     def test_retry_on_temporary_failure(self, mock_get):
         """Test retry logic on temporary failures"""
         # First call fails with 503, second succeeds
@@ -609,7 +581,7 @@ class TestServiceIntegrationRetry:
         with pytest.raises(ServiceIntegrationError):
             client.get_user_sessions("test-user-id", "2024-01-01", "2024-01-31")
 
-    @patch('requests.Session.get')
+    @patch("requests.Session.get")
     def test_no_retry_on_client_error(self, mock_get):
         """Test no retry on client errors (4xx)"""
         mock_response = Mock()
@@ -630,7 +602,7 @@ class TestServiceIntegrationRetry:
 class TestServiceIntegrationCaching:
     """Test caching behavior in service integration"""
 
-    @patch('requests.Session.get')
+    @patch("requests.Session.get")
     def test_health_check_caching(self, mock_get):
         """Test health check result caching"""
         mock_response = Mock()
@@ -651,7 +623,7 @@ class TestServiceIntegrationCaching:
         # For now, each call should make a request
         assert mock_get.call_count >= 1
 
-    @patch('requests.Session.get')
+    @patch("requests.Session.get")
     def test_user_info_caching(self, mock_get):
         """Test user info caching"""
         mock_response = Mock()
@@ -659,7 +631,7 @@ class TestServiceIntegrationCaching:
         mock_response.json.return_value = {
             "id": "test-user-id",
             "email": "test@example.com",
-            "role": "developer"
+            "role": "developer",
         }
         mock_get.return_value = mock_response
 

@@ -91,6 +91,7 @@ class RetryableModelMixin(models.Model):
 
     def refresh_from_db_with_retry(self, fields=None):
         """Refresh from database with retry logic"""
+
         @retry_on_database_error(max_retries=3)
         def _refresh():
             self.refresh_from_db(fields=fields)
@@ -236,7 +237,7 @@ class ServerlessViewMixin:
         """
         Override to add common optimizations for serverless
         """
-        if hasattr(super(), 'get_queryset'):
+        if hasattr(super(), "get_queryset"):
             queryset = super().get_queryset()
             # Add common optimizations like select_related, prefetch_related
             return queryset
@@ -252,5 +253,6 @@ class ServerlessViewMixin:
         finally:
             # Ensure database connections are closed properly in serverless
             from django.db import connections
+
             for conn in connections.all():
                 conn.close()
