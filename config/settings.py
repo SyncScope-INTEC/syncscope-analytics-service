@@ -271,17 +271,34 @@ LOGGING = {
 }
 
 # Cache configuration (Redis)
-CACHES = {
-    "default": {
-        "BACKEND": "django_redis.cache.RedisCache",
-        "LOCATION": config("REDIS_URL", default="redis://127.0.0.1:6379/1"),
-        "OPTIONS": {
-            "CLIENT_CLASS": "django_redis.client.DefaultClient",
-        },
-        "KEY_PREFIX": "syncscope_analytics",
-        "TIMEOUT": config("CACHE_TIMEOUT", default=300, cast=int),
+REDIS_URL = config("REDIS_URL", default=None)
+
+if REDIS_URL:
+    # Use hosted Redis instance
+    CACHES = {
+        "default": {
+            "BACKEND": "django_redis.cache.RedisCache",
+            "LOCATION": REDIS_URL,
+            "OPTIONS": {
+                "CLIENT_CLASS": "django_redis.client.DefaultClient",
+            },
+            "KEY_PREFIX": "syncscope_analytics",
+            "TIMEOUT": config("CACHE_TIMEOUT", default=300, cast=int),
+        }
     }
-}
+else:
+    # Fallback Redis configuration for local development
+    CACHES = {
+        "default": {
+            "BACKEND": "django_redis.cache.RedisCache",
+            "LOCATION": f"redis://{config('REDIS_HOST', default='localhost')}:{config('REDIS_PORT', default='6379', cast=int)}/{config('REDIS_DB', default='1', cast=int)}",
+            "OPTIONS": {
+                "CLIENT_CLASS": "django_redis.client.DefaultClient",
+            },
+            "KEY_PREFIX": "syncscope_analytics",
+            "TIMEOUT": config("CACHE_TIMEOUT", default=300, cast=int),
+        }
+    }
 
 # Service URLs for HTTP integration
 AUTH_SERVICE_URL = config("AUTH_SERVICE_URL", default="http://localhost:8001")
@@ -317,6 +334,7 @@ SPECTACULAR_SETTINGS = {
         }
     },
     "SERVERS": [
+        {"url": "http://127.0.0.1:8000", "description": "Local analytics service"},
         {"url": "http://localhost:8000", "description": "Local development server"},
         {"url": "https://syncscope-analytics-service-dev.up.railway.app", "description": "Development server"},
     ],

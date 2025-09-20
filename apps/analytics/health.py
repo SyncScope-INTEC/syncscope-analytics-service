@@ -10,9 +10,9 @@ from django.core.cache import cache
 from django.http import JsonResponse
 from django.utils import timezone
 from rest_framework import status
-from rest_framework.decorators import api_view
+from rest_framework.decorators import api_view, permission_classes
+from rest_framework.permissions import AllowAny
 from drf_spectacular.utils import extend_schema
-import requests
 
 logger = logging.getLogger(__name__)
 
@@ -29,14 +29,6 @@ logger = logging.getLogger(__name__)
                 "timestamp": {"type": "string", "format": "date-time"},
                 "database": {"type": "boolean"},
                 "redis": {"type": "boolean"},
-                "external_services": {
-                    "type": "object",
-                    "properties": {
-                        "auth_service": {"type": "boolean"},
-                        "monitoring_service": {"type": "boolean"},
-                        "management_service": {"type": "boolean"}
-                    }
-                }
             }
         },
         503: {
@@ -50,22 +42,18 @@ logger = logging.getLogger(__name__)
     }
 )
 @api_view(['GET'])
+@permission_classes([AllowAny])
 def health_check(request):
     """
     Comprehensive health check endpoint
     """
     try:
-        # Get health status for all components
+        # Get health status for core components only
         db_healthy = check_database_connection()
         redis_healthy = check_redis_connection()
-        external_services = check_external_services()
 
         # Determine overall status
-        all_healthy = (
-            db_healthy and
-            redis_healthy and
-            all(external_services.values())
-        )
+        all_healthy = db_healthy and redis_healthy
 
         status_code = status.HTTP_200_OK if all_healthy else status.HTTP_503_SERVICE_UNAVAILABLE
 
@@ -74,7 +62,6 @@ def health_check(request):
             "timestamp": timezone.now().isoformat(),
             "database": db_healthy,
             "redis": redis_healthy,
-            "external_services": external_services,
         }
 
         return JsonResponse(response_data, status=status_code)
@@ -102,37 +89,33 @@ def check_database_connection() -> bool:
 
 
 def check_redis_connection() -> bool:
-    """Check Redis connectivity"""
-    try:
-        # Try to set and get a test value
-        cache.set('health_check', 'ok', timeout=10)
-        return cache.get('health_check') == 'ok'
-    except Exception as e:
-        logger.error(f"Redis health check failed: {e}")
-        return False
+    """Check Redis connectivity with retry logic"""
+    from django.conf import settings
 
+    # Log Redis configuration for debugging
+    redis_url = getattr(settings, 'REDIS_URL', None)
+    cache_location = settings.CACHES['default']['LOCATION']
+    logger.info(f"Redis health check - REDIS_URL: {redis_url}, Cache location: {cache_location}")
 
-
-def check_external_services() -> Dict[str, bool]:
-    """Check external service connectivity"""
-    import os
-
-    services = {
-        'auth_service': os.getenv('AUTH_SERVICE_URL', 'http://localhost:8001'),
-        'monitoring_service': os.getenv('MONITORING_SERVICE_URL', 'http://localhost:8002'),
-        'management_service': os.getenv('MANAGEMENT_SERVICE_URL', 'http://localhost:8003'),
-    }
-
-    results = {}
-
-    for service_name, service_url in services.items():
+    max_retries = 3
+    for attempt in range(max_retries):
         try:
-            # Try to reach the health endpoint of each service
-            health_url = f"{service_url.rstrip('/')}/health/"
-            response = requests.get(health_url, timeout=5)
-            results[service_name] = response.status_code == 200
+            # Try to set and get a test value
+            cache.set('health_check', 'ok', timeout=10)
+            result = cache.get('health_check')
+            if result == 'ok':
+                return True
+            else:
+                logger.warning(f"Redis health check attempt {attempt + 1}: Value mismatch - expected 'ok', got '{result}'")
         except Exception as e:
-            logger.warning(f"External service {service_name} health check failed: {e}")
-            results[service_name] = False
+            logger.error(f"Redis health check attempt {attempt + 1} failed: {e}")
+            if attempt == max_retries - 1:
+                return False
+            # Brief delay before retry
+            import time
+            time.sleep(0.5)
 
-    return results
+    return False
+
+
+

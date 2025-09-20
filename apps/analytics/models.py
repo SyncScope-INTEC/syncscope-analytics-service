@@ -310,52 +310,6 @@ class AnalyticsCache(RetryableModelMixin, TimestampMixin, models.Model):
         super().save(*args, **kwargs)
 
 
-class MetricSnapshot(RetryableModelMixin, TimestampMixin, models.Model):
-    """
-    Model for storing metric snapshots at specific points in time.
-    Used for tracking metric values over time and trend analysis.
-    """
-
-    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
-    metric_definition = models.ForeignKey(
-        MetricDefinition,
-        on_delete=models.CASCADE,
-        related_name="snapshots",
-        db_column="metric_definition_id"
-    )
-    value = models.DecimalField(max_digits=20, decimal_places=6)
-    context = models.JSONField(
-        default=dict,
-        blank=True,
-        help_text="Context data (user_id, team_id, project_id, etc.)"
-    )
-    calculation_metadata = models.JSONField(
-        default=dict,
-        blank=True,
-        help_text="Metadata about how this value was calculated"
-    )
-    snapshot_date = models.DateTimeField(default=timezone.now)
-    data_period_start = models.DateTimeField(null=True, blank=True)
-    data_period_end = models.DateTimeField(null=True, blank=True)
-
-    objects = RetryableManager()
-
-    class Meta:
-        db_table = get_table_name("metric_snapshots")
-        ordering = ["-snapshot_date"]
-        indexes = [
-            models.Index(fields=["metric_definition", "snapshot_date"]),
-            models.Index(fields=["snapshot_date"]),
-            models.Index(fields=["data_period_start", "data_period_end"]),
-        ]
-
-    def __str__(self):
-        return f"{self.metric_definition.name}: {self.value} at {self.snapshot_date}"
-
-    @atomic_with_retry()
-    def save(self, *args, **kwargs):
-        super().save(*args, **kwargs)
-
 
 class AlertRule(RetryableModelMixin, TimestampMixin, models.Model):
     """

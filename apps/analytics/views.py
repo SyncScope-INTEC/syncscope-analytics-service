@@ -74,8 +74,8 @@ def api_home(request):
     # Quick stats about the service
     service_info = {
         "endpoints": 12,
-        "features": ["Report Generation", "Metric Calculations", "Data Analysis", "InfluxDB Integration"],
-        "data_sources": ["PostgreSQL", "InfluxDB", "Service APIs"],
+        "features": ["Report Generation", "Metric Calculations", "Data Analysis", "Time Series Storage"],
+        "data_sources": ["PostgreSQL", "Service APIs", "Time Series Data"],
         "export_formats": ["PDF", "Excel", "CSV", "JSON"],
         "status": "Operational",
     }
@@ -125,6 +125,26 @@ def api_home(request):
         summary="Get report details",
         description="Retrieve details of a specific report.",
         responses={200: ReportSerializer, 404: "ErrorResponseSerializer"},
+    ),
+    update=extend_schema(
+        tags=["Reports"],
+        summary="Update report",
+        description="Update a specific report.",
+        request=ReportSerializer,
+        responses={200: ReportSerializer, 404: "ErrorResponseSerializer"},
+    ),
+    partial_update=extend_schema(
+        tags=["Reports"],
+        summary="Partially update report",
+        description="Partially update a specific report.",
+        request=ReportSerializer,
+        responses={200: ReportSerializer, 404: "ErrorResponseSerializer"},
+    ),
+    destroy=extend_schema(
+        tags=["Reports"],
+        summary="Delete report",
+        description="Delete a specific report.",
+        responses={204: None, 404: "ErrorResponseSerializer"},
     ),
 )
 @method_decorator(ratelimit(key="user", rate="10/m", method="POST"), name="create")
@@ -274,6 +294,32 @@ class ReportViewSet(ServerlessViewMixin, viewsets.ModelViewSet):
         description="Create a new metric definition for calculations.",
         request=MetricDefinitionSerializer,
         responses={201: MetricDefinitionSerializer, 400: "ErrorResponseSerializer"},
+    ),
+    retrieve=extend_schema(
+        tags=["Metrics"],
+        summary="Get metric definition details",
+        description="Retrieve details of a specific metric definition.",
+        responses={200: MetricDefinitionSerializer, 404: "ErrorResponseSerializer"},
+    ),
+    update=extend_schema(
+        tags=["Metrics"],
+        summary="Update metric definition",
+        description="Update a specific metric definition.",
+        request=MetricDefinitionSerializer,
+        responses={200: MetricDefinitionSerializer, 404: "ErrorResponseSerializer"},
+    ),
+    partial_update=extend_schema(
+        tags=["Metrics"],
+        summary="Partially update metric definition",
+        description="Partially update a specific metric definition.",
+        request=MetricDefinitionSerializer,
+        responses={200: MetricDefinitionSerializer, 404: "ErrorResponseSerializer"},
+    ),
+    destroy=extend_schema(
+        tags=["Metrics"],
+        summary="Delete metric definition",
+        description="Delete a specific metric definition.",
+        responses={204: None, 404: "ErrorResponseSerializer"},
     ),
 )
 class MetricDefinitionViewSet(ServerlessViewMixin, viewsets.ModelViewSet):
