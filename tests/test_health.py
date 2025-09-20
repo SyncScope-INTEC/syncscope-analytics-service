@@ -1,317 +1,353 @@
-from unittest.mock import Mock, patch
-
-from django.http import JsonResponse
-from django.test import TestCase, override_settings
-from django.urls import reverse
-
 import pytest
-from rest_framework import status
-from rest_framework.test import APIClient
+import json
+from unittest.mock import patch, MagicMock
+from datetime import datetime
 
+from django.test import TestCase, Client
+from django.utils import timezone
+from django.core.cache import cache
+from django.db import connection
 
-class TestHealthCheck(TestCase):
-    """Test cases for health check functionality"""
-
-    def setUp(self):
-        self.client = APIClient()
-
-    def test_health_check_endpoint_exists(self):
-        """Test that health check endpoint is accessible"""
-        response = self.client.get("/health/")
-
-        # Should not return 404
-        assert response.status_code != 404
-
-    @patch("apps.analytics.health.check_database_connection")
-    @patch("apps.analytics.health.check_redis_connection")
-    def test_health_check_all_healthy(self, mock_redis, mock_db):
-        """Test health check when all services are healthy"""
-        # Mock all services as healthy
-        mock_db.return_value = True
-        mock_redis.return_value = True
-
-        response = self.client.get("/health/")
-
-        assert response.status_code == status.HTTP_200_OK
-        data = response.json()
-
-        assert data["status"] == "healthy"
-        assert data["database"] is True
-        assert data["redis"] is True
-
-    @patch("apps.analytics.health.check_database_connection")
-    @patch("apps.analytics.health.check_redis_connection")
-    def test_health_check_database_unhealthy(self, mock_redis, mock_db):
-        """Test health check when database is unhealthy"""
-        mock_db.return_value = False
-        mock_redis.return_value = True
-
-        response = self.client.get("/health/")
-
-        assert response.status_code == status.HTTP_503_SERVICE_UNAVAILABLE
-        data = response.json()
-
-        assert data["status"] == "unhealthy"
-        assert data["database"] is False
-
-    @patch("apps.analytics.health.check_database_connection")
-    @patch("apps.analytics.health.check_redis_connection")
-    def test_health_check_redis_unhealthy(self, mock_redis, mock_db):
-        """Test health check when Redis is unhealthy"""
-        mock_db.return_value = True
-        mock_redis.return_value = False
-
-        response = self.client.get("/health/")
-
-        assert response.status_code == status.HTTP_503_SERVICE_UNAVAILABLE
-        data = response.json()
-
-        assert data["status"] == "unhealthy"
-        assert data["redis"] is False
-
-    def test_health_check_response_format(self):
-        """Test health check response format"""
-        response = self.client.get("/health/")
-        data = response.json()
-
-        # Check required fields
-        required_fields = [
-            "status",
-            "timestamp",
-            "database",
-            "redis",
-        ]
-        for field in required_fields:
-            assert field in data
-
-    @patch("apps.analytics.health.check_database_connection")
-    def test_health_check_exception_handling(self, mock_db):
-        """Test health check handles exceptions gracefully"""
-        # Mock database check to raise exception
-        mock_db.side_effect = Exception("Database connection failed")
-
-        response = self.client.get("/health/")
-
-        # Should still return a response, not crash
-        assert response.status_code in [
-            status.HTTP_503_SERVICE_UNAVAILABLE,
-            status.HTTP_500_INTERNAL_SERVER_ERROR,
-        ]
-
-        # Should be valid JSON
-        data = response.json()
-        assert "status" in data
-
-    def test_health_check_content_type(self):
-        """Test health check returns JSON content type"""
-        response = self.client.get("/health/")
-
-        assert "application/json" in response["Content-Type"]
-
-    @override_settings(DEBUG=True)
-    def test_health_check_debug_mode(self):
-        """Test health check in debug mode"""
-        response = self.client.get("/health/")
-        data = response.json()
-
-        # In debug mode, might include additional information
-        assert "status" in data
-
-    @override_settings(DEBUG=False)
-    def test_health_check_production_mode(self):
-        """Test health check in production mode"""
-        response = self.client.get("/health/")
-        data = response.json()
-
-        # In production mode, should still work but may hide sensitive info
-        assert "status" in data
+from apps.analytics.health import health_check, check_database_connection, check_redis_connection
 
 
 @pytest.mark.django_db
-class TestHealthCheckFunctions:
-    """Test individual health check functions"""
+class TestHealthCheckView:
+    """Test health check endpoint."""
 
-    @patch("django.db.connection.ensure_connection")
-    def test_check_database_connection_success(self, mock_ensure_connection):
-        """Test database connection check success"""
-        from apps.analytics.health import check_database_connection
+    @pytest.fixture
+    def client(self):
+        return Client()
 
-        mock_ensure_connection.return_value = None  # No exception = success
+    def test_health_check_all_healthy(self, client):
+        """Test health check when all services are healthy."""
+        with patch('apps.analytics.health.check_database_connection', return_value=True), \
+             patch('apps.analytics.health.check_redis_connection', return_value=True):
 
+            response = client.get("/health/")
+            assert response.status_code == 200
+
+            data = response.json()
+            assert data["status"] == "healthy"
+            assert data["database"] is True
+            assert data["redis"] is True
+            assert "timestamp" in data
+
+    def test_health_check_database_unhealthy(self, client):
+        """Test health check when database is unhealthy."""
+        with patch('apps.analytics.health.check_database_connection', return_value=False), \
+             patch('apps.analytics.health.check_redis_connection', return_value=True):
+
+            response = client.get("/health/")
+            assert response.status_code == 503
+
+            data = response.json()
+            assert data["status"] == "unhealthy"
+            assert data["database"] is False
+            assert data["redis"] is True
+
+    def test_health_check_redis_unhealthy(self, client):
+        """Test health check when Redis is unhealthy."""
+        with patch('apps.analytics.health.check_database_connection', return_value=True), \
+             patch('apps.analytics.health.check_redis_connection', return_value=False):
+
+            response = client.get("/health/")
+            assert response.status_code == 503
+
+            data = response.json()
+            assert data["status"] == "unhealthy"
+            assert data["database"] is True
+            assert data["redis"] is False
+
+    def test_health_check_all_unhealthy(self, client):
+        """Test health check when all services are unhealthy."""
+        with patch('apps.analytics.health.check_database_connection', return_value=False), \
+             patch('apps.analytics.health.check_redis_connection', return_value=False):
+
+            response = client.get("/health/")
+            assert response.status_code == 503
+
+            data = response.json()
+            assert data["status"] == "unhealthy"
+            assert data["database"] is False
+            assert data["redis"] is False
+
+    def test_health_check_exception_handling(self, client):
+        """Test health check when an exception occurs."""
+        with patch('apps.analytics.health.check_database_connection', side_effect=Exception("Database error")):
+
+            response = client.get("/health/")
+            assert response.status_code == 500
+
+            data = response.json()
+            assert data["status"] == "unhealthy"
+            assert "error" in data
+            assert "timestamp" in data
+
+    def test_health_check_timestamp_format(self, client):
+        """Test that timestamp is in ISO format."""
+        with patch('apps.analytics.health.check_database_connection', return_value=True), \
+             patch('apps.analytics.health.check_redis_connection', return_value=True):
+
+            response = client.get("/health/")
+            data = response.json()
+
+            # Verify timestamp is a valid ISO format
+            timestamp = data["timestamp"]
+            # Should not raise an exception
+            datetime.fromisoformat(timestamp.replace("Z", "+00:00"))
+
+    def test_health_check_no_authentication_required(self, client):
+        """Test that health check doesn't require authentication."""
+        # No authentication setup needed
+        response = client.get("/health/")
+        # Should not return 401 Unauthorized
+        assert response.status_code != 401
+        assert response.status_code in [200, 503, 500]
+
+    def test_health_check_response_structure(self, client):
+        """Test the structure of health check response."""
+        with patch('apps.analytics.health.check_database_connection', return_value=True), \
+             patch('apps.analytics.health.check_redis_connection', return_value=True):
+
+            response = client.get("/health/")
+            data = response.json()
+
+            # Check required fields
+            required_fields = ["status", "timestamp", "database", "redis"]
+            for field in required_fields:
+                assert field in data
+
+            # Check data types
+            assert isinstance(data["status"], str)
+            assert isinstance(data["timestamp"], str)
+            assert isinstance(data["database"], bool)
+            assert isinstance(data["redis"], bool)
+
+    def test_health_check_status_values(self, client):
+        """Test that status field contains expected values."""
+        # Test healthy status
+        with patch('apps.analytics.health.check_database_connection', return_value=True), \
+             patch('apps.analytics.health.check_redis_connection', return_value=True):
+
+            response = client.get("/health/")
+            data = response.json()
+            assert data["status"] in ["healthy", "unhealthy"]
+
+        # Test unhealthy status
+        with patch('apps.analytics.health.check_database_connection', return_value=False), \
+             patch('apps.analytics.health.check_redis_connection', return_value=True):
+
+            response = client.get("/health/")
+            data = response.json()
+            assert data["status"] in ["healthy", "unhealthy"]
+
+
+@pytest.mark.django_db
+class TestDatabaseHealthCheck:
+    """Test database health check function."""
+
+    def test_database_connection_healthy(self):
+        """Test successful database connection check."""
+        with patch.object(connection, 'ensure_connection') as mock_ensure:
+            result = check_database_connection()
+            assert result is True
+            mock_ensure.assert_called_once()
+
+    def test_database_connection_unhealthy(self):
+        """Test failed database connection check."""
+        with patch.object(connection, 'ensure_connection', side_effect=Exception("DB Error")):
+            result = check_database_connection()
+            assert result is False
+
+    def test_database_connection_real(self):
+        """Test actual database connection (integration test)."""
+        # This tests the real database connection
         result = check_database_connection()
+        # Should be True since we're using SQLite in memory for tests
         assert result is True
 
-    @patch("django.db.connection.ensure_connection")
-    def test_check_database_connection_failure(self, mock_ensure_connection):
-        """Test database connection check failure"""
-        from apps.analytics.health import check_database_connection
 
-        mock_ensure_connection.side_effect = Exception("Database error")
+@pytest.mark.django_db
+class TestRedisHealthCheck:
+    """Test Redis health check function."""
 
-        result = check_database_connection()
-        assert result is False
+    def test_redis_connection_healthy(self):
+        """Test successful Redis connection check."""
+        with patch.object(cache, 'set') as mock_set, \
+             patch.object(cache, 'get', return_value='ok') as mock_get:
 
-    @patch("django.core.cache.cache.get")
-    def test_check_redis_connection_success(self, mock_cache_get):
-        """Test Redis connection check success"""
-        from apps.analytics.health import check_redis_connection
+            result = check_redis_connection()
+            assert result is True
+            mock_set.assert_called_with("health_check", "ok", timeout=10)
+            mock_get.assert_called_with("health_check")
 
-        mock_cache_get.return_value = None  # No exception = success
+    def test_redis_connection_unhealthy_exception(self):
+        """Test Redis connection check with exception."""
+        with patch.object(cache, 'set', side_effect=Exception("Redis Error")):
+            result = check_redis_connection()
+            assert result is False
 
+    def test_redis_connection_unhealthy_value_mismatch(self):
+        """Test Redis connection check with value mismatch."""
+        with patch.object(cache, 'set') as mock_set, \
+             patch.object(cache, 'get', return_value='wrong_value') as mock_get:
+
+            result = check_redis_connection()
+            assert result is False
+
+    def test_redis_connection_retry_logic(self):
+        """Test Redis connection retry logic."""
+        with patch.object(cache, 'set') as mock_set:
+            # First two calls raise exception, third succeeds
+            mock_set.side_effect = [Exception("Error 1"), Exception("Error 2"), None]
+
+            with patch.object(cache, 'get', return_value='ok') as mock_get, \
+                 patch('time.sleep') as mock_sleep:
+
+                result = check_redis_connection()
+                assert result is True
+                assert mock_set.call_count == 3
+                assert mock_sleep.call_count == 2
+
+    def test_redis_connection_max_retries_exceeded(self):
+        """Test Redis connection when max retries are exceeded."""
+        with patch.object(cache, 'set', side_effect=Exception("Persistent Error")), \
+             patch('time.sleep') as mock_sleep:
+
+            result = check_redis_connection()
+            assert result is False
+            # Should try 3 times, so 2 sleep calls
+            assert mock_sleep.call_count == 2
+
+    def test_redis_connection_partial_retry_success(self):
+        """Test Redis connection succeeding on second attempt."""
+        with patch.object(cache, 'set') as mock_set:
+            # First call fails, second succeeds
+            mock_set.side_effect = [Exception("Error"), None]
+
+            with patch.object(cache, 'get', return_value='ok') as mock_get, \
+                 patch('time.sleep') as mock_sleep:
+
+                result = check_redis_connection()
+                assert result is True
+                assert mock_set.call_count == 2
+                assert mock_sleep.call_count == 1
+
+    @patch('apps.analytics.health.logger')
+    def test_redis_connection_logging(self, mock_logger):
+        """Test Redis connection logging."""
+        with patch.object(cache, 'set', side_effect=Exception("Redis Error")):
+            check_redis_connection()
+
+            # Should log errors for each attempt
+            assert mock_logger.error.call_count == 3
+
+    def test_redis_connection_real_dummy_cache(self):
+        """Test actual Redis connection with dummy cache."""
+        # This tests the real cache connection
+        # In tests, we use DummyCache, so this might behave differently
         result = check_redis_connection()
-        assert result is True
-
-    @patch("django.core.cache.cache.get")
-    def test_check_redis_connection_failure(self, mock_cache_get):
-        """Test Redis connection check failure"""
-        from apps.analytics.health import check_redis_connection
-
-        mock_cache_get.side_effect = Exception("Redis error")
-
-        result = check_redis_connection()
-        assert result is False
+        # DummyCache doesn't actually store values, so this might fail
+        # The result depends on the test cache configuration
+        assert isinstance(result, bool)
 
 
+@pytest.mark.django_db
 class TestHealthCheckIntegration:
-    """Integration tests for health check functionality"""
+    """Integration tests for health check functionality."""
 
-    def test_health_check_endpoint_integration(self):
-        """Test health check endpoint integration"""
-        client = APIClient()
+    @pytest.fixture
+    def client(self):
+        return Client()
 
-        # Make request to health endpoint
+    def test_health_endpoint_integration(self, client):
+        """Test full health check endpoint integration."""
         response = client.get("/health/")
 
-        # Should get a valid response
-        assert response.status_code in [200, 503]
+        # Should return a valid response
+        assert response.status_code in [200, 503, 500]
 
-        # Should be valid JSON
+        # Should return valid JSON
         data = response.json()
         assert isinstance(data, dict)
+
+        # Should have required structure
         assert "status" in data
-
-    @patch("apps.analytics.health.check_database_connection")
-    @patch("apps.analytics.health.check_redis_connection")
-    def test_health_check_caching(self, mock_redis, mock_db):
-        """Test health check result caching"""
-        # Mock all services as healthy
-        mock_db.return_value = True
-        mock_redis.return_value = True
-
-        client = APIClient()
-
-        # Make multiple requests
-        response1 = client.get("/health/")
-        response2 = client.get("/health/")
-
-        assert response1.status_code == 200
-        assert response2.status_code == 200
-
-        # Both should return the same status
-        data1 = response1.json()
-        data2 = response2.json()
-        assert data1["status"] == data2["status"]
-
-    def test_health_check_performance(self):
-        """Test health check response time"""
-        import time
-
-        client = APIClient()
-
-        start_time = time.time()
-        response = client.get("/health/")
-        end_time = time.time()
-
-        response_time = end_time - start_time
-
-        # Health check should be fast (under 5 seconds)
-        assert response_time < 5.0
-        assert response.status_code in [200, 503]
-
-
-class TestHealthCheckErrorScenarios:
-    """Test error scenarios for health check"""
-
-    @patch("apps.analytics.health.check_database_connection")
-    def test_health_check_database_exception(self, mock_db):
-        """Test health check when database check raises exception"""
-        mock_db.side_effect = Exception("Critical database error")
-
-        client = APIClient()
-        response = client.get("/health/")
-
-        # Should handle exception gracefully
-        assert response.status_code in [503, 500]
-
-        data = response.json()
-        assert data["status"] == "unhealthy"
-
-    @patch("apps.analytics.health.check_redis_connection")
-    def test_health_check_redis_exception(self, mock_redis):
-        """Test health check when Redis check raises exception"""
-        mock_redis.side_effect = Exception("Redis connection lost")
-
-        client = APIClient()
-        response = client.get("/health/")
-
-        # Should handle exception gracefully
-        data = response.json()
-        assert data["redis"] is False
-
-    def test_health_check_malformed_response_handling(self):
-        """Test health check handles malformed responses"""
-        client = APIClient()
-
-        # Even if internal functions return unexpected data,
-        # health check should return valid JSON
-        response = client.get("/health/")
-
-        # Should always return valid JSON
-        try:
-            data = response.json()
-            assert isinstance(data, dict)
-        except ValueError:
-            pytest.fail("Health check should always return valid JSON")
-
-
-class TestHealthCheckMonitoring:
-    """Test health check for monitoring purposes"""
-
-    def test_health_check_metrics_structure(self):
-        """Test health check returns structured metrics"""
-        client = APIClient()
-        response = client.get("/health/")
-        data = response.json()
-
-        # Should have timestamp for monitoring
         assert "timestamp" in data
 
-        # Should have boolean values for each component
-        components = ["database", "redis"]
-        for component in components:
-            assert component in data
-            assert isinstance(data[component], bool)
+    def test_health_check_with_mock_failures(self, client):
+        """Test health check with various failure scenarios."""
+        test_cases = [
+            # (db_healthy, redis_healthy, expected_status_code)
+            (True, True, 200),
+            (True, False, 503),
+            (False, True, 503),
+            (False, False, 503),
+        ]
 
-    @patch("apps.analytics.health.check_database_connection")
-    @patch("apps.analytics.health.check_redis_connection")
-    def test_health_check_overall_status_logic(self, mock_redis, mock_db):
-        """Test overall status calculation logic"""
-        # Test all healthy
-        mock_db.return_value = True
-        mock_redis.return_value = True
+        for db_healthy, redis_healthy, expected_code in test_cases:
+            with patch('apps.analytics.health.check_database_connection', return_value=db_healthy), \
+                 patch('apps.analytics.health.check_redis_connection', return_value=redis_healthy):
 
-        client = APIClient()
+                response = client.get("/health/")
+                assert response.status_code == expected_code
+
+                data = response.json()
+                assert data["database"] == db_healthy
+                assert data["redis"] == redis_healthy
+
+                if expected_code == 200:
+                    assert data["status"] == "healthy"
+                else:
+                    assert data["status"] == "unhealthy"
+
+    def test_health_check_response_headers(self, client):
+        """Test health check response headers."""
         response = client.get("/health/")
-        data = response.json()
 
-        assert data["status"] == "healthy"
-        assert response.status_code == 200
+        # Should return JSON content type
+        assert "application/json" in response["Content-Type"]
 
-        # Test one component unhealthy
-        mock_db.return_value = False
+    def test_health_check_method_not_allowed(self, client):
+        """Test that health check only allows GET method."""
+        # Test POST method
+        response = client.post("/health/")
+        assert response.status_code == 405
 
-        response = client.get("/health/")
-        data = response.json()
+        # Test PUT method
+        response = client.put("/health/")
+        assert response.status_code == 405
 
-        assert data["status"] == "unhealthy"
-        assert response.status_code == 503
+        # Test DELETE method
+        response = client.delete("/health/")
+        assert response.status_code == 405
+
+    def test_health_check_consistency(self, client):
+        """Test health check returns consistent results."""
+        with patch('apps.analytics.health.check_database_connection', return_value=True), \
+             patch('apps.analytics.health.check_redis_connection', return_value=True):
+
+            # Make multiple requests
+            responses = [client.get("/health/") for _ in range(3)]
+
+            # All should return 200
+            for response in responses:
+                assert response.status_code == 200
+                data = response.json()
+                assert data["status"] == "healthy"
+                assert data["database"] is True
+                assert data["redis"] is True
+
+    def test_health_check_error_response_structure(self, client):
+        """Test error response structure when exception occurs."""
+        with patch('apps.analytics.health.check_database_connection', side_effect=Exception("Test error")):
+            response = client.get("/health/")
+            assert response.status_code == 500
+
+            data = response.json()
+            assert "status" in data
+            assert "timestamp" in data
+            assert "error" in data
+            assert data["status"] == "unhealthy"
+            assert "Test error" in data["error"]

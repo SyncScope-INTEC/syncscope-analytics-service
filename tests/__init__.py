@@ -1,1 +1,1 @@
-# Test package for SyncScope Analytics Service
+# Tests for SyncScope Analytics Service
