@@ -94,7 +94,7 @@ raw_env = [
 
 # Add any additional environment variables
 for key, value in os.environ.items():
-    if key.startswith(("DATABASE_", "REDIS_", "INFLUXDB_", "SECRET_")):
+    if key.startswith(("DATABASE_", "REDIS_", "SECRET_")):
         raw_env.append(f"{key}={value}")
 
 # Forwarded headers

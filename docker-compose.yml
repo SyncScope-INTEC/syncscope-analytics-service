@@ -13,10 +13,6 @@ services:
       - DEBUG=True
       - DATABASE_URL=postgresql://analytics_user:analytics_pass@postgres:5432/analytics_db
       - REDIS_URL=redis://redis:6379/0
-      - INFLUXDB_URL=http://influxdb:8086
-      - INFLUXDB_TOKEN=analytics-service-token
-      - INFLUXDB_ORG=syncscope
-      - INFLUXDB_BUCKET=analytics-metrics
       - AUTH_SERVICE_URL=http://auth:8000
       - MONITORING_SERVICE_URL=http://monitoring:8000
       - MANAGEMENT_SERVICE_URL=http://management:8000
@@ -28,7 +24,6 @@ services:
     depends_on:
       - postgres
       - redis
-      - influxdb
     networks:
       - syncscope-network
     restart: unless-stopped
@@ -73,29 +68,6 @@ services:
       timeout: 10s
       retries: 3
 
-  # InfluxDB for Time Series Data
-  influxdb:
-    image: influxdb:2.7-alpine
-    ports:
-      - "8086:8086"
-    environment:
-      - DOCKER_INFLUXDB_INIT_MODE=setup
-      - DOCKER_INFLUXDB_INIT_USERNAME=admin
-      - DOCKER_INFLUXDB_INIT_PASSWORD=analytics-admin-password
-      - DOCKER_INFLUXDB_INIT_ORG=syncscope
-      - DOCKER_INFLUXDB_INIT_BUCKET=analytics-metrics
-      - DOCKER_INFLUXDB_INIT_ADMIN_TOKEN=analytics-service-token
-    volumes:
-      - influxdb_data:/var/lib/influxdb2
-      - influxdb_config:/etc/influxdb2
-    networks:
-      - syncscope-network
-    restart: unless-stopped
-    healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:8086/health"]
-      interval: 30s
-      timeout: 10s
-      retries: 3
 
   # Nginx (optional - for production-like setup)
   nginx:
@@ -160,10 +132,6 @@ volumes:
   postgres_data:
     driver: local
   redis_data:
-    driver: local
-  influxdb_data:
-    driver: local
-  influxdb_config:
     driver: local
   static_volume:
     driver: local

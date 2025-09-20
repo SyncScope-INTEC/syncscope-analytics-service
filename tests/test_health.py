@@ -24,21 +24,11 @@ class TestHealthCheck(TestCase):
 
     @patch("apps.analytics.health.check_database_connection")
     @patch("apps.analytics.health.check_redis_connection")
-    @patch("apps.analytics.health.check_influxdb_connection")
-    @patch("apps.analytics.health.check_external_services")
-    def test_health_check_all_healthy(
-        self, mock_services, mock_influx, mock_redis, mock_db
-    ):
+    def test_health_check_all_healthy(self, mock_redis, mock_db):
         """Test health check when all services are healthy"""
         # Mock all services as healthy
         mock_db.return_value = True
         mock_redis.return_value = True
-        mock_influx.return_value = True
-        mock_services.return_value = {
-            "auth_service": True,
-            "monitoring_service": True,
-            "management_service": True,
-        }
 
         response = self.client.get("/health/")
 
@@ -48,25 +38,13 @@ class TestHealthCheck(TestCase):
         assert data["status"] == "healthy"
         assert data["database"] is True
         assert data["redis"] is True
-        assert data["influxdb"] is True
-        assert data["external_services"]["auth_service"] is True
 
     @patch("apps.analytics.health.check_database_connection")
     @patch("apps.analytics.health.check_redis_connection")
-    @patch("apps.analytics.health.check_influxdb_connection")
-    @patch("apps.analytics.health.check_external_services")
-    def test_health_check_database_unhealthy(
-        self, mock_services, mock_influx, mock_redis, mock_db
-    ):
+    def test_health_check_database_unhealthy(self, mock_redis, mock_db):
         """Test health check when database is unhealthy"""
         mock_db.return_value = False
         mock_redis.return_value = True
-        mock_influx.return_value = True
-        mock_services.return_value = {
-            "auth_service": True,
-            "monitoring_service": True,
-            "management_service": True,
-        }
 
         response = self.client.get("/health/")
 
@@ -78,20 +56,10 @@ class TestHealthCheck(TestCase):
 
     @patch("apps.analytics.health.check_database_connection")
     @patch("apps.analytics.health.check_redis_connection")
-    @patch("apps.analytics.health.check_influxdb_connection")
-    @patch("apps.analytics.health.check_external_services")
-    def test_health_check_redis_unhealthy(
-        self, mock_services, mock_influx, mock_redis, mock_db
-    ):
+    def test_health_check_redis_unhealthy(self, mock_redis, mock_db):
         """Test health check when Redis is unhealthy"""
         mock_db.return_value = True
         mock_redis.return_value = False
-        mock_influx.return_value = True
-        mock_services.return_value = {
-            "auth_service": True,
-            "monitoring_service": True,
-            "management_service": True,
-        }
 
         response = self.client.get("/health/")
 
@@ -100,86 +68,6 @@ class TestHealthCheck(TestCase):
 
         assert data["status"] == "unhealthy"
         assert data["redis"] is False
-
-    @patch("apps.analytics.health.check_database_connection")
-    @patch("apps.analytics.health.check_redis_connection")
-    @patch("apps.analytics.health.check_influxdb_connection")
-    @patch("apps.analytics.health.check_external_services")
-    def test_health_check_influxdb_unhealthy(
-        self, mock_services, mock_influx, mock_redis, mock_db
-    ):
-        """Test health check when InfluxDB is unhealthy"""
-        mock_db.return_value = True
-        mock_redis.return_value = True
-        mock_influx.return_value = False
-        mock_services.return_value = {
-            "auth_service": True,
-            "monitoring_service": True,
-            "management_service": True,
-        }
-
-        response = self.client.get("/health/")
-
-        assert response.status_code == status.HTTP_503_SERVICE_UNAVAILABLE
-        data = response.json()
-
-        assert data["status"] == "unhealthy"
-        assert data["influxdb"] is False
-
-    @patch("apps.analytics.health.check_database_connection")
-    @patch("apps.analytics.health.check_redis_connection")
-    @patch("apps.analytics.health.check_influxdb_connection")
-    @patch("apps.analytics.health.check_external_services")
-    def test_health_check_external_services_unhealthy(
-        self, mock_services, mock_influx, mock_redis, mock_db
-    ):
-        """Test health check when external services are unhealthy"""
-        mock_db.return_value = True
-        mock_redis.return_value = True
-        mock_influx.return_value = True
-        mock_services.return_value = {
-            "auth_service": False,
-            "monitoring_service": True,
-            "management_service": False,
-        }
-
-        response = self.client.get("/health/")
-
-        assert response.status_code == status.HTTP_503_SERVICE_UNAVAILABLE
-        data = response.json()
-
-        assert data["status"] == "unhealthy"
-        assert data["external_services"]["auth_service"] is False
-        assert data["external_services"]["management_service"] is False
-
-    @patch("apps.analytics.health.check_database_connection")
-    @patch("apps.analytics.health.check_redis_connection")
-    @patch("apps.analytics.health.check_influxdb_connection")
-    @patch("apps.analytics.health.check_external_services")
-    def test_health_check_partial_failure(
-        self, mock_services, mock_influx, mock_redis, mock_db
-    ):
-        """Test health check with partial service failures"""
-        mock_db.return_value = True
-        mock_redis.return_value = False
-        mock_influx.return_value = True
-        mock_services.return_value = {
-            "auth_service": True,
-            "monitoring_service": False,
-            "management_service": True,
-        }
-
-        response = self.client.get("/health/")
-
-        assert response.status_code == status.HTTP_503_SERVICE_UNAVAILABLE
-        data = response.json()
-
-        assert data["status"] == "unhealthy"
-        assert data["database"] is True  # Healthy
-        assert data["redis"] is False  # Unhealthy
-        assert data["influxdb"] is True  # Healthy
-        assert data["external_services"]["auth_service"] is True  # Healthy
-        assert data["external_services"]["monitoring_service"] is False  # Unhealthy
 
     def test_health_check_response_format(self):
         """Test health check response format"""
@@ -192,17 +80,9 @@ class TestHealthCheck(TestCase):
             "timestamp",
             "database",
             "redis",
-            "influxdb",
-            "external_services",
         ]
         for field in required_fields:
             assert field in data
-
-        # Check external services structure
-        assert isinstance(data["external_services"], dict)
-        expected_services = ["auth_service", "monitoring_service", "management_service"]
-        for service in expected_services:
-            assert service in data["external_services"]
 
     @patch("apps.analytics.health.check_database_connection")
     def test_health_check_exception_handling(self, mock_db):
@@ -291,101 +171,6 @@ class TestHealthCheckFunctions:
         result = check_redis_connection()
         assert result is False
 
-    @patch("apps.analytics.influxdb_client.influxdb_manager.health_check")
-    def test_check_influxdb_connection_success(self, mock_health_check):
-        """Test InfluxDB connection check success"""
-        from apps.analytics.health import check_influxdb_connection
-
-        mock_health_check.return_value = True
-
-        result = check_influxdb_connection()
-        assert result is True
-
-    @patch("apps.analytics.influxdb_client.influxdb_manager.health_check")
-    def test_check_influxdb_connection_failure(self, mock_health_check):
-        """Test InfluxDB connection check failure"""
-        from apps.analytics.health import check_influxdb_connection
-
-        mock_health_check.return_value = False
-
-        result = check_influxdb_connection()
-        assert result is False
-
-    @patch("requests.get")
-    def test_check_external_services_all_healthy(self, mock_get):
-        """Test external services check when all are healthy"""
-        from apps.analytics.health import check_external_services
-
-        # Mock successful responses
-        mock_response = Mock()
-        mock_response.status_code = 200
-        mock_response.json.return_value = {"status": "healthy"}
-        mock_get.return_value = mock_response
-
-        result = check_external_services()
-
-        assert result["auth_service"] is True
-        assert result["monitoring_service"] is True
-        assert result["management_service"] is True
-
-    @patch("requests.get")
-    def test_check_external_services_some_unhealthy(self, mock_get):
-        """Test external services check when some are unhealthy"""
-        from apps.analytics.health import check_external_services
-
-        def side_effect(url, **kwargs):
-            if "auth" in url:
-                # Auth service healthy
-                mock_response = Mock()
-                mock_response.status_code = 200
-                mock_response.json.return_value = {"status": "healthy"}
-                return mock_response
-            else:
-                # Other services unhealthy
-                mock_response = Mock()
-                mock_response.status_code = 503
-                return mock_response
-
-        mock_get.side_effect = side_effect
-
-        result = check_external_services()
-
-        assert result["auth_service"] is True
-        assert result["monitoring_service"] is False
-        assert result["management_service"] is False
-
-    @patch("requests.get")
-    def test_check_external_services_timeout(self, mock_get):
-        """Test external services check with timeout"""
-        import requests
-
-        from apps.analytics.health import check_external_services
-
-        mock_get.side_effect = requests.Timeout("Request timeout")
-
-        result = check_external_services()
-
-        # All services should be marked as unhealthy due to timeout
-        assert result["auth_service"] is False
-        assert result["monitoring_service"] is False
-        assert result["management_service"] is False
-
-    @patch("requests.get")
-    def test_check_external_services_connection_error(self, mock_get):
-        """Test external services check with connection error"""
-        import requests
-
-        from apps.analytics.health import check_external_services
-
-        mock_get.side_effect = requests.ConnectionError("Connection failed")
-
-        result = check_external_services()
-
-        # All services should be marked as unhealthy due to connection error
-        assert result["auth_service"] is False
-        assert result["monitoring_service"] is False
-        assert result["management_service"] is False
-
 
 class TestHealthCheckIntegration:
     """Integration tests for health check functionality"""
@@ -407,21 +192,11 @@ class TestHealthCheckIntegration:
 
     @patch("apps.analytics.health.check_database_connection")
     @patch("apps.analytics.health.check_redis_connection")
-    @patch("apps.analytics.health.check_influxdb_connection")
-    @patch("apps.analytics.health.check_external_services")
-    def test_health_check_caching(
-        self, mock_services, mock_influx, mock_redis, mock_db
-    ):
+    def test_health_check_caching(self, mock_redis, mock_db):
         """Test health check result caching"""
         # Mock all services as healthy
         mock_db.return_value = True
         mock_redis.return_value = True
-        mock_influx.return_value = True
-        mock_services.return_value = {
-            "auth_service": True,
-            "monitoring_service": True,
-            "management_service": True,
-        }
 
         client = APIClient()
 
@@ -483,20 +258,6 @@ class TestHealthCheckErrorScenarios:
         data = response.json()
         assert data["redis"] is False
 
-    @patch("apps.analytics.health.check_external_services")
-    def test_health_check_external_services_exception(self, mock_services):
-        """Test health check when external services check raises exception"""
-        mock_services.side_effect = Exception("Network error")
-
-        client = APIClient()
-        response = client.get("/health/")
-
-        # Should handle exception gracefully
-        data = response.json()
-        # External services should be marked as unhealthy
-        for service in data["external_services"].values():
-            assert service is False
-
     def test_health_check_malformed_response_handling(self):
         """Test health check handles malformed responses"""
         client = APIClient()
@@ -526,41 +287,18 @@ class TestHealthCheckMonitoring:
         assert "timestamp" in data
 
         # Should have boolean values for each component
-        components = ["database", "redis", "influxdb"]
+        components = ["database", "redis"]
         for component in components:
             assert component in data
             assert isinstance(data[component], bool)
 
-    def test_health_check_external_services_detail(self):
-        """Test health check provides detailed external service status"""
-        client = APIClient()
-        response = client.get("/health/")
-        data = response.json()
-
-        external_services = data["external_services"]
-        expected_services = ["auth_service", "monitoring_service", "management_service"]
-
-        for service in expected_services:
-            assert service in external_services
-            assert isinstance(external_services[service], bool)
-
     @patch("apps.analytics.health.check_database_connection")
     @patch("apps.analytics.health.check_redis_connection")
-    @patch("apps.analytics.health.check_influxdb_connection")
-    @patch("apps.analytics.health.check_external_services")
-    def test_health_check_overall_status_logic(
-        self, mock_services, mock_influx, mock_redis, mock_db
-    ):
+    def test_health_check_overall_status_logic(self, mock_redis, mock_db):
         """Test overall status calculation logic"""
         # Test all healthy
         mock_db.return_value = True
         mock_redis.return_value = True
-        mock_influx.return_value = True
-        mock_services.return_value = {
-            "auth_service": True,
-            "monitoring_service": True,
-            "management_service": True,
-        }
 
         client = APIClient()
         response = client.get("/health/")

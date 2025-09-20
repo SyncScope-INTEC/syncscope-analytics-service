@@ -139,22 +139,6 @@ def analytics_cache():
     )
 
 
-@pytest.fixture
-def mock_influxdb_client():
-    """Mock InfluxDB client"""
-    with patch("apps.analytics.influxdb_client.InfluxDBManager") as mock_client:
-        mock_instance = Mock()
-        mock_instance.query_metrics.return_value = [
-            {
-                "time": "2024-01-01T10:00:00Z",
-                "user_id": "test-user-id",
-                "session_duration": 30,
-                "commits": 3,
-            }
-        ]
-        mock_instance.write_metric.return_value = True
-        mock_client.return_value = mock_instance
-        yield mock_instance
 
 
 @pytest.fixture

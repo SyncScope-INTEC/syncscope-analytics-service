@@ -271,7 +271,7 @@ class TestAnalyticsCacheModel:
             "metrics": {"productivity": 85.5, "code_quality": 78.3},
             "metadata": {
                 "calculation_time": 1.25,
-                "source": "influxdb",
+                "source": "postgresql",
                 "cached_at": timezone.now().isoformat(),
             },
             "charts": [{"x": "2024-01-01", "y": 80.0}, {"x": "2024-01-02", "y": 82.5}],
