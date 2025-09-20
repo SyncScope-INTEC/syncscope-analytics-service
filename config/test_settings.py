@@ -12,6 +12,9 @@ DATABASES = {
     "default": {
         "ENGINE": "django.db.backends.sqlite3",
         "NAME": ":memory:",
+        "TEST": {
+            "SERIALIZE": False,  # Disable serialization to avoid table errors
+        },
     }
 }
 
@@ -69,3 +72,27 @@ MAX_REPORT_SIZE = 1000
 PASSWORD_HASHERS = [
     "django.contrib.auth.hashers.MD5PasswordHasher",
 ]
+
+# Disable migrations for faster test runs (but keep database creation)
+class DisableMigrations:
+    def __contains__(self, item):
+        return True
+
+    def __getitem__(self, item):
+        return None
+
+# Only disable migrations if we're not in CI (to ensure tables are created properly in CI)
+import os
+if not os.environ.get("GITHUB_ACTIONS"):
+    MIGRATION_MODULES = DisableMigrations()
+else:
+    # In CI, we still want to use SQLite in-memory but with proper migrations
+    DATABASES["default"]["NAME"] = ":memory:"
+
+# Additional test database settings
+DATABASES["default"]["OPTIONS"] = {
+    "timeout": 20,
+}
+
+# Disable Django's test client CSRF checks
+USE_TZ = True

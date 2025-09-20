@@ -150,11 +150,6 @@ jobs:
         env:
           SECRET_KEY: "test-secret-key-for-analytics-ci"
           DEBUG: "True"
-          DB_NAME: "test_syncscope"
-          DB_USER: "postgres"
-          DB_PASSWORD: "postgres"
-          DB_HOST: "localhost"
-          DB_PORT: "5432"
           REDIS_URL: "redis://localhost:6379/0"
           JWT_SECRET_KEY: "test-jwt-secret"
           ALLOWED_HOSTS: "localhost,127.0.0.1"
@@ -165,12 +160,13 @@ jobs:
           ENABLE_ML_PREDICTIONS: "False"
           CACHE_TIMEOUT: "60"
           MAX_REPORT_SIZE: "1000"
+          GITHUB_ACTIONS: "true"
         run: |
           # Install diff-cover for differential coverage
           pip install diff-cover
 
-          # Run all tests with coverage report generation
-          coverage run -m pytest tests/ --ds=config.test_settings || echo "Tests directory not found, creating placeholder"
+          # Run all tests with coverage report generation using SQLite in-memory
+          coverage run -m pytest tests/ --ds=config.test_settings --reuse-db || echo "Tests directory not found, creating placeholder"
 
           # Create tests directory if it doesn't exist (for initial setup)
           if [ ! -d "tests" ]; then
@@ -235,11 +231,6 @@ jobs:
         env:
           SECRET_KEY: "test-secret-key-for-analytics-ci"
           DEBUG: "True"
-          DB_NAME: "test_syncscope"
-          DB_USER: "postgres"
-          DB_PASSWORD: "postgres"
-          DB_HOST: "localhost"
-          DB_PORT: "5432"
           REDIS_URL: "redis://localhost:6379/0"
           JWT_SECRET_KEY: "test-jwt-secret"
           ALLOWED_HOSTS: "localhost,127.0.0.1"
@@ -250,6 +241,7 @@ jobs:
           ENABLE_ML_PREDICTIONS: "False"
           CACHE_TIMEOUT: "60"
           MAX_REPORT_SIZE: "1000"
+          GITHUB_ACTIONS: "true"
         run: |
           # Create tests directory if it doesn't exist
           if [ ! -d "tests" ]; then
@@ -258,8 +250,8 @@ jobs:
             echo "def test_placeholder(): pass" > tests/test_placeholder.py
           fi
 
-          # Run tests with full coverage
-          coverage run -m pytest tests/ --ds=config.test_settings
+          # Run tests with full coverage using SQLite in-memory
+          coverage run -m pytest tests/ --ds=config.test_settings --reuse-db
           coverage report
           coverage xml
 
