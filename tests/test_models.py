@@ -24,23 +24,23 @@ class TestMetricDefinition:
         """Test creating a metric definition."""
         assert metric_definition.name == "test_metric"
         assert metric_definition.description == "A test metric for analytics"
-        assert metric_definition.calculation_method == "SUM"
+        assert metric_definition.calculation_method == "sum"
         assert metric_definition.category == "performance"
         assert metric_definition.unit == "requests"
         assert metric_definition.is_active is True
 
     def test_metric_definition_str(self, metric_definition):
         """Test string representation."""
-        assert str(metric_definition) == "test_metric"
+        assert str(metric_definition) == "test_metric (performance)"
 
     def test_metric_definition_with_filters_and_tags(self, metric_definition_complex):
         """Test metric definition with complex data."""
-        assert metric_definition_complex.filters == {"status": "active"}
-        assert metric_definition_complex.tags == {
+        assert metric_definition_complex.parameters["filters"] == {"status": "active"}
+        assert metric_definition_complex.parameters["tags"] == {
             "priority": "high",
             "team": "analytics",
         }
-        assert metric_definition_complex.aggregation_period == "daily"
+        assert metric_definition_complex.parameters["aggregation_period"] == "daily"
 
     def test_metric_definition_timestamps(self, metric_definition):
         """Test timestamp fields are auto-populated."""
@@ -59,13 +59,13 @@ class TestMetricDefinition:
         MetricDefinition.objects.create(
             name="active_metric",
             description="Active metric",
-            calculation_method="COUNT",
+            calculation_method="count",
             is_active=True,
         )
         MetricDefinition.objects.create(
             name="inactive_metric",
             description="Inactive metric",
-            calculation_method="COUNT",
+            calculation_method="count",
             is_active=False,
         )
 
@@ -75,10 +75,10 @@ class TestMetricDefinition:
 
     def test_metric_definition_calculation_methods(self):
         """Test different calculation methods."""
-        methods = ["SUM", "AVERAGE", "COUNT", "MIN", "MAX"]
+        methods = ["sum", "avg", "count", "min", "max"]
         for method in methods:
             metric = MetricDefinition.objects.create(
-                name=f"metric_{method.lower()}",
+                name=f"metric_{method}",
                 description=f"Metric with {method}",
                 calculation_method=method,
             )
@@ -92,15 +92,14 @@ class TestReport:
     def test_create_report(self, report):
         """Test creating a report."""
         assert report.name == "test_report"
-        assert report.description == "A test report"
-        assert report.report_type == "summary"
+        assert report.type == "custom"
         assert report.status == "completed"
-        assert report.configuration is not None
+        assert report.config is not None
         assert report.data is not None
 
     def test_report_str(self, report):
         """Test string representation."""
-        assert str(report) == "test_report"
+        assert str(report) == "test_report - custom (completed)"
 
     def test_report_status_choices(self, user):
         """Test different report statuses."""
@@ -108,25 +107,23 @@ class TestReport:
         for status in statuses:
             report = Report.objects.create(
                 name=f"report_{status}",
-                description=f"Report with {status} status",
-                report_type="summary",
+                type="custom",
                 status=status,
-                generated_by=user,
+                created_by=user.id if hasattr(user, "id") else user,
             )
             assert report.status == status
 
     def test_report_types(self, user):
         """Test different report types."""
-        types = ["summary", "detailed", "comparison"]
+        types = ["productivity", "code_quality", "custom"]
         for report_type in types:
             report = Report.objects.create(
                 name=f"report_{report_type}",
-                description=f"{report_type.title()} report",
-                report_type=report_type,
+                type=report_type,
                 status="pending",
-                generated_by=user,
+                created_by=user.id if hasattr(user, "id") else user,
             )
-            assert report.report_type == report_type
+            assert report.type == report_type
 
     def test_report_data_structure(self, report):
         """Test report data contains expected structure."""
@@ -137,10 +134,10 @@ class TestReport:
 
     def test_report_configuration_structure(self, report, metric_definition):
         """Test report configuration contains expected structure."""
-        assert "metrics" in report.configuration
-        assert "date_range" in report.configuration
-        assert metric_definition.id in report.configuration["metrics"]
-        assert report.configuration["date_range"] == "last_7_days"
+        assert "metrics" in report.config
+        assert "date_range" in report.config
+        assert str(metric_definition.id) in report.config["metrics"]
+        assert report.config["date_range"] == "last_7_days"
 
     def test_pending_report(self, pending_report):
         """Test pending report creation."""
@@ -160,18 +157,18 @@ class TestAnalyticsCache:
     def test_create_cache_entry(self, analytics_cache):
         """Test creating a cache entry."""
         assert analytics_cache.cache_key == "test_cache_key"
-        assert analytics_cache.cache_data is not None
+        assert analytics_cache.data is not None
         assert analytics_cache.expires_at is not None
 
     def test_cache_str(self, analytics_cache):
         """Test string representation."""
-        assert str(analytics_cache) == "test_cache_key"
+        assert str(analytics_cache) == "Cache: test_cache_key (metric_result)"
 
     def test_cache_data_structure(self, analytics_cache):
         """Test cache data contains expected structure."""
-        assert "metric_values" in analytics_cache.cache_data
-        assert "timestamps" in analytics_cache.cache_data
-        assert analytics_cache.cache_data["metric_values"] == [100, 200, 300]
+        assert "metric_values" in analytics_cache.data
+        assert "timestamps" in analytics_cache.data
+        assert analytics_cache.data["metric_values"] == [100, 200, 300]
 
     def test_cache_expiration(self, expired_cache):
         """Test expired cache detection."""
@@ -340,14 +337,13 @@ class TestModelIntegration:
         """Test report creation with metric definition reference."""
         report = Report.objects.create(
             name="integration_report",
-            description="Report with metric",
-            report_type="summary",
+            type="custom",
             status="completed",
-            generated_by=user,
-            configuration={"metrics": [metric_definition.id]},
+            created_by=user.id if hasattr(user, "id") else user,
+            config={"metrics": [str(metric_definition.id)]},
         )
 
-        assert metric_definition.id in report.configuration["metrics"]
+        assert str(metric_definition.id) in report.config["metrics"]
         assert (
             MetricDefinition.objects.get(id=metric_definition.id) == metric_definition
         )
@@ -356,11 +352,12 @@ class TestModelIntegration:
         """Test caching report data."""
         cache_entry = AnalyticsCache.objects.create(
             cache_key=f"report_{report.id}",
-            cache_data=report.data,
+            cache_type="report_data",
+            data=report.data,
             expires_at=timezone.now() + timedelta(hours=1),
         )
 
-        assert cache_entry.cache_data == report.data
+        assert cache_entry.data == report.data
 
     def test_time_series_with_metric_context(self, metric_definition):
         """Test time series data in context of metrics."""

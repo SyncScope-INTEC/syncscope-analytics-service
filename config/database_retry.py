@@ -25,6 +25,7 @@ def atomic_with_retry(max_retries: int = 3, delay: float = 0.5) -> Callable:
         @functools.wraps(func)
         def wrapper(*args, **kwargs) -> Any:
             last_exception = None
+            current_delay = delay  # Use local variable to avoid scope issues
 
             for attempt in range(max_retries + 1):
                 try:
@@ -35,10 +36,10 @@ def atomic_with_retry(max_retries: int = 3, delay: float = 0.5) -> Callable:
                     if attempt < max_retries:
                         logger.warning(
                             f"Database operation failed (attempt {attempt + 1}/{max_retries + 1}): {e}. "
-                            f"Retrying in {delay} seconds..."
+                            f"Retrying in {current_delay} seconds..."
                         )
-                        time.sleep(delay)
-                        delay *= 2  # Exponential backoff
+                        time.sleep(current_delay)
+                        current_delay *= 2  # Exponential backoff
                     else:
                         logger.error(
                             f"Database operation failed after {max_retries + 1} attempts: {e}"
@@ -74,6 +75,7 @@ def retry_on_database_error(max_retries: int = 3, delay: float = 0.5) -> Callabl
         @functools.wraps(func)
         def wrapper(*args, **kwargs) -> Any:
             last_exception = None
+            current_delay = delay  # Use local variable to avoid scope issues
 
             for attempt in range(max_retries + 1):
                 try:
@@ -83,10 +85,10 @@ def retry_on_database_error(max_retries: int = 3, delay: float = 0.5) -> Callabl
                     if attempt < max_retries:
                         logger.warning(
                             f"Database operation failed (attempt {attempt + 1}/{max_retries + 1}): {e}. "
-                            f"Retrying in {delay} seconds..."
+                            f"Retrying in {current_delay} seconds..."
                         )
-                        time.sleep(delay)
-                        delay *= 2  # Exponential backoff
+                        time.sleep(current_delay)
+                        current_delay *= 2  # Exponential backoff
                     else:
                         logger.error(
                             f"Database operation failed after {max_retries + 1} attempts: {e}"

@@ -29,7 +29,7 @@ def metric_definition():
     return MetricDefinition.objects.create(
         name="test_metric",
         description="A test metric for analytics",
-        calculation_method="SUM",
+        calculation_method="sum",
         category="performance",
         unit="requests",
         is_active=True,
@@ -42,13 +42,16 @@ def metric_definition_complex():
     return MetricDefinition.objects.create(
         name="complex_metric",
         description="A complex test metric",
-        calculation_method="AVERAGE",
-        category="business",
+        calculation_method="avg",
+        category="performance",
         unit="percentage",
         is_active=True,
-        aggregation_period="daily",
-        filters={"status": "active"},
-        tags={"priority": "high", "team": "analytics"},
+        parameters={
+            "aggregation_period": "daily",
+            "filters": {"status": "active"},
+            "tags": {"priority": "high", "team": "analytics"},
+        },
+        data_sources=["monitoring", "management"],
     )
 
 
@@ -57,11 +60,10 @@ def report(user, metric_definition):
     """Create a test report."""
     return Report.objects.create(
         name="test_report",
-        description="A test report",
-        report_type="summary",
+        type="custom",
         status="completed",
-        generated_by=user,
-        configuration={"metrics": [metric_definition.id], "date_range": "last_7_days"},
+        created_by=user.id if hasattr(user, "id") else user,
+        config={"metrics": [str(metric_definition.id)], "date_range": "last_7_days"},
         data={"total_requests": 1000, "average_response_time": 250},
     )
 
@@ -71,11 +73,10 @@ def pending_report(user):
     """Create a pending report."""
     return Report.objects.create(
         name="pending_report",
-        description="A pending test report",
-        report_type="detailed",
+        type="custom",
         status="pending",
-        generated_by=user,
-        configuration={"metrics": [], "date_range": "last_30_days"},
+        created_by=user.id if hasattr(user, "id") else user,
+        config={"metrics": [], "date_range": "last_30_days"},
     )
 
 
@@ -84,7 +85,8 @@ def analytics_cache():
     """Create a test analytics cache entry."""
     return AnalyticsCache.objects.create(
         cache_key="test_cache_key",
-        cache_data={
+        cache_type="metric_result",
+        data={
             "metric_values": [100, 200, 300],
             "timestamps": ["2024-01-01", "2024-01-02", "2024-01-03"],
         },
@@ -97,7 +99,8 @@ def expired_cache():
     """Create an expired cache entry."""
     return AnalyticsCache.objects.create(
         cache_key="expired_cache_key",
-        cache_data={"old_data": "value"},
+        cache_type="metric_result",
+        data={"old_data": "value"},
         expires_at=timezone.now() - timedelta(hours=1),
     )
 

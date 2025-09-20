@@ -3,17 +3,6 @@
 import django.db.models.deletion
 import uuid
 from django.db import migrations, models
-import sys
-
-
-def get_table_name(base_name):
-    """Get table name with or without schema prefix based on test mode."""
-    if "test" in sys.argv or "pytest" in sys.modules:
-        # SQLite doesn't support schemas, use simple table names for tests
-        return base_name
-    else:
-        # PostgreSQL with analytics schema
-        return f"analytics.{base_name}"
 
 
 class Migration(migrations.Migration):
@@ -41,9 +30,9 @@ class Migration(migrations.Migration):
                 ('source_metric_id', models.UUIDField(blank=True, help_text='Reference to metric_definitions.id if applicable', null=True)),
             ],
             options={
-                'db_table': get_table_name('analytics_cache'),
+                'db_table': 'analytics.analytics_cache',
                 'ordering': ['-created_at'],
-                'indexes': [models.Index(fields=['cache_key'], name='analytics_cache_key_idx'), models.Index(fields=['cache_type'], name='analytics_cache_type_idx'), models.Index(fields=['expires_at'], name='analytics_cache_expires_idx'), models.Index(fields=['source_metric_id'], name='analytics_cache_metric_idx'), models.Index(fields=['last_accessed'], name='analytics_cache_accessed_idx')],
+                'indexes': [models.Index(fields=['cache_key'], name='analytics.a_cache_k_033971_idx'), models.Index(fields=['cache_type'], name='analytics.a_cache_t_ad5219_idx'), models.Index(fields=['expires_at'], name='analytics.a_expires_110ff1_idx'), models.Index(fields=['source_metric_id'], name='analytics.a_source__c073b2_idx'), models.Index(fields=['last_accessed'], name='analytics.a_last_ac_8793b0_idx')],
             },
         ),
         migrations.CreateModel(
@@ -64,9 +53,9 @@ class Migration(migrations.Migration):
                 ('cache_duration', models.IntegerField(default=300, help_text='Cache duration in seconds')),
             ],
             options={
-                'db_table': get_table_name('metric_definitions'),
+                'db_table': 'analytics.metric_definitions',
                 'ordering': ['category', 'name'],
-                'indexes': [models.Index(fields=['name'], name='metric_definitions_name_idx'), models.Index(fields=['category'], name='metric_definitions_category_idx'), models.Index(fields=['calculation_method'], name='metric_definitions_method_idx'), models.Index(fields=['is_active'], name='metric_definitions_active_idx')],
+                'indexes': [models.Index(fields=['name'], name='analytics.m_name_0fc87f_idx'), models.Index(fields=['category'], name='analytics.m_categor_b29ce5_idx'), models.Index(fields=['calculation_method'], name='analytics.m_calcula_b6d501_idx'), models.Index(fields=['is_active'], name='analytics.m_is_acti_f904fd_idx')],
             },
         ),
         migrations.CreateModel(
@@ -93,9 +82,9 @@ class Migration(migrations.Migration):
                 ('expires_at', models.DateTimeField(blank=True, help_text='When this report expires', null=True)),
             ],
             options={
-                'db_table': get_table_name('reports'),
+                'db_table': 'analytics.reports',
                 'ordering': ['-created_at'],
-                'indexes': [models.Index(fields=['created_by'], name='reports_created_by_idx'), models.Index(fields=['company_id'], name='reports_company_idx'), models.Index(fields=['team_id'], name='reports_team_idx'), models.Index(fields=['project_id'], name='reports_project_idx'), models.Index(fields=['type'], name='reports_type_idx'), models.Index(fields=['status'], name='reports_status_idx'), models.Index(fields=['created_at'], name='reports_created_at_idx'), models.Index(fields=['expires_at'], name='reports_expires_idx')],
+                'indexes': [models.Index(fields=['created_by'], name='analytics.r_created_9859d6_idx'), models.Index(fields=['company_id'], name='analytics.r_company_4eade5_idx'), models.Index(fields=['team_id'], name='analytics.r_team_id_07ad55_idx'), models.Index(fields=['project_id'], name='analytics.r_project_634ad2_idx'), models.Index(fields=['type'], name='analytics.r_type_3dcf36_idx'), models.Index(fields=['status'], name='analytics.r_status_e33acc_idx'), models.Index(fields=['created_at'], name='analytics.r_created_6b7c5f_idx'), models.Index(fields=['expires_at'], name='analytics.r_expires_f8fd32_idx')],
             },
         ),
         migrations.CreateModel(
@@ -118,9 +107,9 @@ class Migration(migrations.Migration):
                 ('updated_at', models.DateTimeField(auto_now=True)),
             ],
             options={
-                'db_table': get_table_name('time_series_data'),
+                'db_table': 'analytics.time_series_data',
                 'ordering': ['-timestamp'],
-                'indexes': [models.Index(fields=['measurement', 'timestamp'], name='time_series_measurement_ts_idx'), models.Index(fields=['source', 'timestamp'], name='time_series_source_ts_idx'), models.Index(fields=['user_id', 'timestamp'], name='time_series_user_ts_idx'), models.Index(fields=['project_id', 'timestamp'], name='time_series_project_ts_idx'), models.Index(fields=['team_id', 'timestamp'], name='time_series_team_ts_idx'), models.Index(fields=['timestamp'], name='time_series_timestamp_idx'), models.Index(fields=['measurement', 'source'], name='time_series_measurement_source_idx')],
+                'indexes': [models.Index(fields=['measurement', 'timestamp'], name='analytics.t_measure_ca6e56_idx'), models.Index(fields=['source', 'timestamp'], name='analytics.t_source_aceab8_idx'), models.Index(fields=['user_id', 'timestamp'], name='analytics.t_user_id_f510c9_idx'), models.Index(fields=['project_id', 'timestamp'], name='analytics.t_project_7e4faa_idx'), models.Index(fields=['team_id', 'timestamp'], name='analytics.t_team_id_8cd44b_idx'), models.Index(fields=['timestamp'], name='analytics.t_timesta_5ae1c9_idx'), models.Index(fields=['measurement', 'source'], name='analytics.t_measure_849f3b_idx')],
             },
         ),
         migrations.CreateModel(
@@ -140,9 +129,9 @@ class Migration(migrations.Migration):
                 ('metric_definition', models.ForeignKey(db_column='metric_definition_id', on_delete=django.db.models.deletion.CASCADE, related_name='alert_rules', to='analytics.metricdefinition')),
             ],
             options={
-                'db_table': get_table_name('alert_rules'),
+                'db_table': 'analytics.alert_rules',
                 'ordering': ['name'],
-                'indexes': [models.Index(fields=['metric_definition'], name='alert_rules_metric_idx'), models.Index(fields=['is_active'], name='alert_rules_active_idx'), models.Index(fields=['severity'], name='alert_rules_severity_idx')],
+                'indexes': [models.Index(fields=['metric_definition'], name='analytics.a_metric__4b656a_idx'), models.Index(fields=['is_active'], name='analytics.a_is_acti_53066b_idx'), models.Index(fields=['severity'], name='analytics.a_severit_e4196c_idx')],
             },
         ),
         migrations.CreateModel(
@@ -163,9 +152,9 @@ class Migration(migrations.Migration):
                 ('metric_definition', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, related_name='snapshots', to='analytics.metricdefinition')),
             ],
             options={
-                'db_table': get_table_name('metric_snapshots'),
+                'db_table': 'analytics.metric_snapshots',
                 'ordering': ['-snapshot_time'],
-                'indexes': [models.Index(fields=['metric_definition', 'snapshot_time'], name='metric_snapshots_metric_ts_idx'), models.Index(fields=['user_id', 'snapshot_time'], name='metric_snapshots_user_ts_idx'), models.Index(fields=['project_id', 'snapshot_time'], name='metric_snapshots_project_ts_idx'), models.Index(fields=['team_id', 'snapshot_time'], name='metric_snapshots_team_ts_idx'), models.Index(fields=['period_start', 'period_end'], name='metric_snapshots_period_idx')],
+                'indexes': [models.Index(fields=['metric_definition', 'snapshot_time'], name='analytics.m_metric__19ef62_idx'), models.Index(fields=['user_id', 'snapshot_time'], name='analytics.m_user_id_a94f3c_idx'), models.Index(fields=['project_id', 'snapshot_time'], name='analytics.m_project_7e664e_idx'), models.Index(fields=['team_id', 'snapshot_time'], name='analytics.m_team_id_30fc83_idx'), models.Index(fields=['period_start', 'period_end'], name='analytics.m_period__951d20_idx')],
                 'unique_together': {('metric_definition', 'snapshot_time', 'user_id', 'project_id', 'team_id')},
             },
         ),
