@@ -5,7 +5,6 @@ Database mixins for the Analytics Service with retry logic and reliability featu
 import logging
 from typing import Any
 
-from django.contrib.auth.models import BaseUserManager
 from django.db import models
 
 from config.database_retry import atomic_with_retry, retry_on_database_error
@@ -97,44 +96,6 @@ class RetryableModelMixin(models.Model):
             self.refresh_from_db(fields=fields)
 
         return _refresh()
-
-
-class RetryableUserManager(BaseUserManager):
-    """Custom user manager with retry logic"""
-
-    @retry_on_database_error(max_retries=3)
-    def create_user(self, email, password=None, **extra_fields):
-        """Create and save a user with retry logic"""
-        if not email:
-            raise ValueError("The Email field must be set")
-
-        email = self.normalize_email(email)
-        user = self.model(email=email, **extra_fields)
-        user.set_password(password)
-        user.save(using=self._db)
-        return user
-
-    @retry_on_database_error(max_retries=3)
-    def create_superuser(self, email, password=None, **extra_fields):
-        """Create and save a superuser with retry logic"""
-        extra_fields.setdefault("is_staff", True)
-        extra_fields.setdefault("is_superuser", True)
-
-        if extra_fields.get("is_staff") is not True:
-            raise ValueError("Superuser must have is_staff=True.")
-        if extra_fields.get("is_superuser") is not True:
-            raise ValueError("Superuser must have is_superuser=True.")
-
-        return self.create_user(email, password, **extra_fields)
-
-    @retry_on_database_error(max_retries=3)
-    def get_by_email(self, email):
-        """Get user by email with retry logic"""
-        try:
-            return self.get(email=email)
-        except self.model.DoesNotExist:
-            logger.warning(f"User with email {email} does not exist")
-            raise
 
 
 class TimestampMixin(models.Model):
