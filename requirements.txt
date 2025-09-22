@@ -1,8 +1,8 @@
 # Core Django dependencies
-Django==4.2.16
+Django==4.2.24
+drf-spectacular==0.28.0
 djangorestframework==3.16.1
 django-cors-headers==4.9.0
-drf-spectacular==0.27.0
 django-extensions==3.2.3
 
 # Database and Cache
@@ -36,8 +36,8 @@ gunicorn==23.0.0
 whitenoise==6.6.0
 
 # Development
+black==25.9.0
 python-dotenv==1.1.1
-black==23.12.1
 isort==5.13.2
 
 # Testing
