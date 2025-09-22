@@ -491,7 +491,10 @@ class AuthServiceClient(BaseServiceClient):
         if result:
             return result
         else:
-            return ["read_analytics", "write_reports"]  # Return list for test compatibility
+            return [
+                "read_analytics",
+                "write_reports",
+            ]  # Return list for test compatibility
 
     """
     Client for interacting with the Auth Service

@@ -37,6 +37,7 @@ class DataFrameProcessor:
             logger.error(f"Error creating DataFrame: {e}")
             # Import pandas as a different name to avoid mock interference
             import pandas
+
             return pandas.DataFrame()
 
     @staticmethod
@@ -494,7 +495,7 @@ class DataAnalyzer:
                 "analysis_timestamp": datetime.now().isoformat(),
                 "metrics": {},
                 "trends": {},
-                "insights": []
+                "insights": [],
             }
 
             # Basic session analysis
@@ -502,15 +503,23 @@ class DataAnalyzer:
                 sessions = user_data["sessions"]
                 if sessions:
                     session_durations = [s.get("duration", 0) for s in sessions]
-                    analysis["metrics"]["session_stats"] = self.statistical_analyzer.calculate_basic_stats(session_durations)
-                    analysis["trends"]["session_trend"] = self.trend_analyzer.calculate_trend(session_durations)
+                    analysis["metrics"][
+                        "session_stats"
+                    ] = self.statistical_analyzer.calculate_basic_stats(
+                        session_durations
+                    )
+                    analysis["trends"][
+                        "session_trend"
+                    ] = self.trend_analyzer.calculate_trend(session_durations)
 
             # Git activity analysis
             if "git_activity" in user_data:
                 git_activity = user_data["git_activity"]
                 if git_activity:
                     commits_per_day = [g.get("commit_count", 0) for g in git_activity]
-                    analysis["metrics"]["velocity"] = self.productivity_analyzer.calculate_velocity(commits_per_day)
+                    analysis["metrics"][
+                        "velocity"
+                    ] = self.productivity_analyzer.calculate_velocity(commits_per_day)
 
             return analysis
 
@@ -528,7 +537,7 @@ class DataAnalyzer:
                 "analysis_timestamp": datetime.now().isoformat(),
                 "metrics": {},
                 "trends": {},
-                "collaboration": {}
+                "collaboration": {},
             }
 
             # Team session analysis
@@ -536,7 +545,9 @@ class DataAnalyzer:
                 sessions = team_data["sessions"]
                 if sessions:
                     total_hours = [s.get("total_hours", 0) for s in sessions]
-                    analysis["metrics"]["team_session_stats"] = self.statistical_analyzer.calculate_basic_stats(total_hours)
+                    analysis["metrics"][
+                        "team_session_stats"
+                    ] = self.statistical_analyzer.calculate_basic_stats(total_hours)
 
             # Collaboration analysis
             if "team_context" in team_data and "members" in team_data["team_context"]:
@@ -545,15 +556,21 @@ class DataAnalyzer:
                     # Create mock interaction data for collaboration score
                     interaction_data = []
                     for i, member_a in enumerate(members):
-                        for member_b in members[i+1:]:
-                            interaction_data.append({
-                                "user_a": member_a.get("user_id"),
-                                "user_b": member_b.get("user_id"),
-                                "interaction_count": 5  # Mock data
-                            })
+                        for member_b in members[i + 1 :]:
+                            interaction_data.append(
+                                {
+                                    "user_a": member_a.get("user_id"),
+                                    "user_b": member_b.get("user_id"),
+                                    "interaction_count": 5,  # Mock data
+                                }
+                            )
 
                     if interaction_data:
-                        analysis["collaboration"]["score"] = self.productivity_analyzer.calculate_team_collaboration_score(interaction_data)
+                        analysis["collaboration"][
+                            "score"
+                        ] = self.productivity_analyzer.calculate_team_collaboration_score(
+                            interaction_data
+                        )
 
             return analysis
 
@@ -569,7 +586,7 @@ class DataAnalyzer:
             analysis = {
                 "analysis_timestamp": datetime.now().isoformat(),
                 "metrics": {},
-                "trends": {}
+                "trends": {},
             }
 
             if "quality_scores" in quality_data and "timestamps" in quality_data:
@@ -578,7 +595,9 @@ class DataAnalyzer:
 
                 if scores and timestamps:
                     analysis.update(
-                        self.productivity_analyzer.analyze_code_quality_trend(scores, timestamps)
+                        self.productivity_analyzer.analyze_code_quality_trend(
+                            scores, timestamps
+                        )
                     )
 
             return analysis
