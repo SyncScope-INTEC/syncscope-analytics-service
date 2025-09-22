@@ -7,32 +7,40 @@ import os
 import sys
 
 # Set Django settings if not already set
-if not os.environ.get('DJANGO_SETTINGS_MODULE'):
-    os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'config.settings')
+if not os.environ.get("DJANGO_SETTINGS_MODULE"):
+    os.environ.setdefault("DJANGO_SETTINGS_MODULE", "config.settings")
 
 import django
+
 django.setup()
 
 from django.http import JsonResponse
 from django.utils import timezone
 
+
 def simple_health_check():
     """Ultra-simple health check that just verifies Django is working"""
     try:
-        return JsonResponse({
-            "status": "healthy",
-            "timestamp": timezone.now().isoformat(),
-            "service": "analytics-simple",
-            "message": "Basic Django setup working"
-        })
+        return JsonResponse(
+            {
+                "status": "healthy",
+                "timestamp": timezone.now().isoformat(),
+                "service": "analytics-simple",
+                "message": "Basic Django setup working",
+            }
+        )
     except Exception as e:
-        return JsonResponse({
-            "status": "error",
-            "timestamp": timezone.now().isoformat(),
-            "error": str(e)
-        }, status=500)
+        return JsonResponse(
+            {
+                "status": "error",
+                "timestamp": timezone.now().isoformat(),
+                "error": str(e),
+            },
+            status=500,
+        )
 
-if __name__ == '__main__':
+
+if __name__ == "__main__":
     # Test the simple health check
     try:
         response = simple_health_check()

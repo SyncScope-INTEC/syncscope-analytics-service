@@ -70,7 +70,11 @@ def health_check(request):
 
         # Return 200 if service is basically functional (database working)
         # Only return 503 if critical components are down
-        status_code = status.HTTP_200_OK if service_healthy else status.HTTP_503_SERVICE_UNAVAILABLE
+        status_code = (
+            status.HTTP_200_OK
+            if service_healthy
+            else status.HTTP_503_SERVICE_UNAVAILABLE
+        )
 
         logger.info(f"Health check result: {response_data}")
         return JsonResponse(response_data, status=status_code)
@@ -131,7 +135,9 @@ def check_redis_connection() -> bool:
         if result == "ok":
             return True
         else:
-            logger.warning(f"Redis health check: Value mismatch - expected 'ok', got '{result}'")
+            logger.warning(
+                f"Redis health check: Value mismatch - expected 'ok', got '{result}'"
+            )
             return False
 
     except Exception as e:
