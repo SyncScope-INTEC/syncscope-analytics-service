@@ -60,7 +60,10 @@ class TestDataFrameProcessor:
     def test_create_dataframe_error_handling(self, mock_logger):
         """Test error handling in create_dataframe."""
         # Pass invalid data that will cause an error
-        with patch("pandas.DataFrame", side_effect=Exception("Test error")):
+        with patch(
+            "apps.analytics.data_analysis.pd.DataFrame",
+            side_effect=Exception("Test error"),
+        ):
             df = DataFrameProcessor.create_dataframe([{"test": "data"}])
 
             assert isinstance(df, pd.DataFrame)
@@ -894,7 +897,7 @@ class TestOptimizeDataframeMemory:
         """Test error handling in optimize_dataframe_memory."""
         df = pd.DataFrame({"col": [1, 2, 3]})
 
-        with patch("pandas.DataFrame.min", side_effect=Exception("Test error")):
+        with patch("pandas.Series.min", side_effect=Exception("Test error")):
             result = optimize_dataframe_memory(df)
 
             mock_logger.error.assert_called_once()

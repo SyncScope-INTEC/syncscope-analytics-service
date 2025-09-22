@@ -35,7 +35,7 @@ class DataFrameProcessor:
             return df
         except Exception as e:
             logger.error(f"Error creating DataFrame: {e}")
-            # Create empty DataFrame - test should patch 'apps.analytics.data_analysis.pd.DataFrame'
+            # Create empty DataFrame
             return pd.DataFrame()
 
     @staticmethod

@@ -108,10 +108,10 @@ class BaseServiceClient:
         except requests.RequestException:
             # Re-raise RequestException without additional logging
             raise
-        except requests.exceptions.Timeout as e:
+        except (requests.exceptions.Timeout, requests.Timeout) as e:
             logger.error(f"Timeout requesting {self.service_name} endpoint: {endpoint}")
             raise requests.RequestException("Timeout") from e
-        except requests.exceptions.ConnectionError as e:
+        except (requests.exceptions.ConnectionError, requests.ConnectionError) as e:
             logger.error(f"Connection error to {self.service_name}: {endpoint}")
             raise requests.RequestException("Connection error") from e
         except ValueError as e:
@@ -732,7 +732,17 @@ class ServiceIntegrationManager:
         """
         Get comprehensive user data from all services
         """
-        return self.get_user_analytics_data(user_id, start_date, end_date)
+        # Get data from each service
+        profile = self.auth.get_user_profile(user_id)
+        sessions = self.monitoring.get_user_sessions(user_id, start_date, end_date)
+
+        return {
+            "profile": profile,
+            "sessions": sessions,
+            "user_id": user_id,
+            "start_date": start_date.isoformat(),
+            "end_date": end_date.isoformat(),
+        }
 
     def get_comprehensive_team_data(
         self, team_id: str, start_date: datetime, end_date: datetime
@@ -740,7 +750,39 @@ class ServiceIntegrationManager:
         """
         Get comprehensive team data from all services
         """
-        return self.get_team_analytics_data(team_id, start_date, end_date)
+        # Get data from each service
+        members = self.management.get_team_members(team_id)
+        sessions = self.monitoring.get_team_sessions(team_id, start_date, end_date)
+
+        return {
+            "members": members,
+            "sessions": sessions,
+            "team_id": team_id,
+            "start_date": start_date.isoformat(),
+            "end_date": end_date.isoformat(),
+        }
+
+    def check_all_services(self) -> Dict[str, Any]:
+        """
+        Check health of all integrated services and return overall status
+        """
+        monitoring_status = self.monitoring.check_health()
+        management_status = self.management.check_health()
+        auth_status = self.auth.check_health()
+
+        # Determine overall status
+        all_healthy = all(
+            status.get("status") == "healthy"
+            for status in [monitoring_status, management_status, auth_status]
+            if status is not None
+        )
+
+        return {
+            "monitoring": monitoring_status or {"status": "unavailable"},
+            "management": management_status or {"status": "unavailable"},
+            "auth": auth_status or {"status": "unavailable"},
+            "overall_status": "healthy" if all_healthy else "unhealthy",
+        }
 
 
 # Global service integration manager instance
