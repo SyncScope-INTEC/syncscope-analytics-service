@@ -35,10 +35,8 @@ class DataFrameProcessor:
             return df
         except Exception as e:
             logger.error(f"Error creating DataFrame: {e}")
-            # Import pandas as a different name to avoid mock interference
-            import pandas
-
-            return pandas.DataFrame()
+            # Create empty DataFrame - test should patch 'apps.analytics.data_analysis.pd.DataFrame'
+            return pd.DataFrame()
 
     @staticmethod
     def clean_data(
