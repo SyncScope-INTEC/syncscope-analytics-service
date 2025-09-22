@@ -1,24 +1,25 @@
 """
 Tests for metric_calculators.py module.
 """
-import pytest
-import pandas as pd
-import numpy as np
 from datetime import datetime, timedelta
-from unittest.mock import patch, MagicMock
 from decimal import Decimal
+from unittest.mock import MagicMock, patch
 
 from django.utils import timezone
 
+import numpy as np
+import pandas as pd
+import pytest
+
 from apps.analytics.metric_calculators import (
     BaseMetricCalculator,
-    ProductivityMetricCalculator,
     CodeQualityMetricCalculator,
     CollaborationMetricCalculator,
-    PerformanceMetricCalculator,
-    MetricCalculatorFactory,
     MetricCalculationService,
+    MetricCalculatorFactory,
     MetricCalculatorRegistry,
+    PerformanceMetricCalculator,
+    ProductivityMetricCalculator,
 )
 from apps.analytics.models import MetricDefinition
 

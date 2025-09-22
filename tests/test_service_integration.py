@@ -1,19 +1,20 @@
 """
 Tests for service_integration.py module.
 """
-import pytest
-import requests
 from datetime import datetime, timedelta
-from unittest.mock import patch, MagicMock
+from unittest.mock import MagicMock, patch
 
 from django.core.cache import cache
 from django.test import override_settings
 
+import pytest
+import requests
+
 from apps.analytics.service_integration import (
-    BaseServiceClient,
-    MonitoringServiceClient,
-    ManagementServiceClient,
     AuthServiceClient,
+    BaseServiceClient,
+    ManagementServiceClient,
+    MonitoringServiceClient,
     ServiceIntegrationManager,
 )
 
@@ -582,8 +583,8 @@ class TestIntegrationScenarios:
         )
 
         assert user_profile["username"] == "testuser"
-        assert len(user_sessions) == 1
-        assert user_sessions[0]["duration"] == 120
+        assert len(user_sessions["sessions"]) == 1
+        assert user_sessions["sessions"][0]["duration"] == 120
 
     @patch("apps.analytics.service_integration.cache")
     def test_caching_behavior_across_requests(self, mock_cache):
