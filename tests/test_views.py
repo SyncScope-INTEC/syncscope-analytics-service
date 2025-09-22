@@ -724,8 +724,8 @@ class TestReportGeneration:
 
         # Create a report
         report = Report.objects.create(
-            title="Test Productivity Report",
-            report_type="productivity",
+            name="Test Productivity Report",
+            type="productivity",
             config={"test": "config"},
             created_by=123,
             status="pending",
@@ -750,8 +750,8 @@ class TestReportGeneration:
         from apps.analytics.views import ReportViewSet
 
         report = Report.objects.create(
-            title="Test Code Quality Report",
-            report_type="code_quality",
+            name="Test Code Quality Report",
+            type="code_quality",
             config={"test": "config"},
             created_by=123,
             status="pending",
@@ -777,8 +777,8 @@ class TestReportGeneration:
         from apps.analytics.views import ReportViewSet
 
         report = Report.objects.create(
-            title="Test Collaboration Report",
-            report_type="team_collaboration",
+            name="Test Collaboration Report",
+            type="team_performance",
             config={"test": "config"},
             created_by=123,
             status="pending",
@@ -804,8 +804,8 @@ class TestReportGeneration:
         from apps.analytics.views import ReportViewSet
 
         report = Report.objects.create(
-            title="Test Custom Report",
-            report_type="custom",
+            name="Test Custom Report",
+            type="custom",
             config={"test": "config"},
             created_by=123,
             status="pending",
@@ -829,8 +829,8 @@ class TestReportGeneration:
         from apps.analytics.views import ReportViewSet
 
         report = Report.objects.create(
-            title="Test Unknown Report",
-            report_type="unknown_type",
+            name="Test Unknown Report",
+            type="custom",  # Use valid type since unknown_type isn't in choices
             config={"test": "config"},
             created_by=123,
             status="pending",
@@ -839,6 +839,8 @@ class TestReportGeneration:
         viewset = ReportViewSet()
 
         with patch("apps.analytics.views.ReportGenerator"):
+            # Temporarily change the report type to an unknown value
+            report.type = "unknown_type"
             viewset._generate_report_async(report)
 
             report.refresh_from_db()
@@ -851,8 +853,8 @@ class TestReportGeneration:
         from apps.analytics.views import ReportViewSet
 
         report = Report.objects.create(
-            title="Test Report Exception",
-            report_type="productivity",
+            name="Test Report Exception",
+            type="productivity",
             config={"test": "config"},
             created_by=123,
             status="pending",
@@ -879,38 +881,34 @@ class TestReportExport:
 
     def test_export_report_exception_handling(self):
         """Test export report exception handling"""
-        from rest_framework.test import APIRequestFactory
+        from rest_framework.test import APIClient
 
         from apps.analytics.authentication import AnalyticsUser
         from apps.analytics.models import Report
-        from apps.analytics.views import ReportViewSet
 
         # Create a report
         report = Report.objects.create(
-            title="Test Report",
-            report_type="productivity",
+            name="Test Report",
+            type="productivity",
             config={"test": "config"},
             created_by=123,
             status="completed",
             data={"test": "data"},
         )
 
-        # Create authenticated request
-        factory = APIRequestFactory()
-        request = factory.get(f"/api/reports/{report.id}/export/?format=pdf")
-
+        client = APIClient()
         user_data = {"user_id": 123, "email": "test@example.com", "role": "admin"}
-        request.user = AnalyticsUser(user_data)
-
-        viewset = ReportViewSet()
-        viewset.request = request
+        user = AnalyticsUser(user_data)
+        client.force_authenticate(user=user)
 
         # Mock ReportGenerator to raise exception
         with patch("apps.analytics.views.ReportGenerator") as mock_generator:
             mock_instance = mock_generator.return_value
             mock_instance.export_report.side_effect = Exception("Export failed")
 
-            response = viewset.export_report(request, pk=report.id)
+            response = client.post(
+                f"/analytics/reports/{report.id}/export/", {"format": "pdf"}
+            )
 
             assert response.status_code == 500
             assert "Export failed" in response.data["error"]
@@ -922,42 +920,39 @@ class TestCalculateMetricView:
 
     def test_calculate_metric_invalid_data(self):
         """Test calculate metric with invalid data"""
-        from rest_framework.test import APIRequestFactory
+        from rest_framework.test import APIClient
 
         from apps.analytics.authentication import AnalyticsUser
-        from apps.analytics.views import calculate_metric
 
-        factory = APIRequestFactory()
-        request = factory.post("/api/calculate-metric/", {})
-
+        client = APIClient()
         user_data = {"user_id": 123, "email": "test@example.com", "role": "admin"}
-        request.user = AnalyticsUser(user_data)
+        user = AnalyticsUser(user_data)
+        client.force_authenticate(user=user)
 
-        response = calculate_metric(request)
+        response = client.post("/analytics/calculate/", {})
         assert response.status_code == 400
 
     def test_calculate_metric_with_cache(self):
         """Test calculate metric with cached result"""
-        from rest_framework.test import APIRequestFactory
+        from rest_framework.test import APIClient
 
         from apps.analytics.authentication import AnalyticsUser
-        from apps.analytics.views import calculate_metric
 
-        factory = APIRequestFactory()
+        client = APIClient()
+        user_data = {"user_id": 123, "email": "test@example.com", "role": "admin"}
+        user = AnalyticsUser(user_data)
+        client.force_authenticate(user=user)
+
         request_data = {
             "metric_name": "test_metric",
             "context": {"test": "context"},
             "cache_duration": 3600,
         }
-        request = factory.post("/api/calculate-metric/", request_data, format="json")
-
-        user_data = {"user_id": 123, "email": "test@example.com", "role": "admin"}
-        request.user = AnalyticsUser(user_data)
 
         with patch("apps.analytics.views.AnalyticsCache.get_cached_data") as mock_cache:
             mock_cache.return_value = {"cached": "result"}
 
-            response = calculate_metric(request)
+            response = client.post("/analytics/calculate/", request_data, format="json")
 
             assert response.status_code == 200
             assert response.data["cached"] is True
@@ -965,21 +960,20 @@ class TestCalculateMetricView:
 
     def test_calculate_metric_calculator_not_found(self):
         """Test calculate metric when calculator not found"""
-        from rest_framework.test import APIRequestFactory
+        from rest_framework.test import APIClient
 
         from apps.analytics.authentication import AnalyticsUser
-        from apps.analytics.views import calculate_metric
 
-        factory = APIRequestFactory()
+        client = APIClient()
+        user_data = {"user_id": 123, "email": "test@example.com", "role": "admin"}
+        user = AnalyticsUser(user_data)
+        client.force_authenticate(user=user)
+
         request_data = {
             "metric_name": "unknown_metric",
             "context": {"test": "context"},
             "cache_duration": 3600,
         }
-        request = factory.post("/api/calculate-metric/", request_data, format="json")
-
-        user_data = {"user_id": 123, "email": "test@example.com", "role": "admin"}
-        request.user = AnalyticsUser(user_data)
 
         with patch(
             "apps.analytics.views.AnalyticsCache.get_cached_data"
@@ -990,28 +984,27 @@ class TestCalculateMetricView:
             mock_registry_instance = mock_registry.return_value
             mock_registry_instance.get_calculator.return_value = None
 
-            response = calculate_metric(request)
+            response = client.post("/analytics/calculate/", request_data, format="json")
 
             assert response.status_code == 404
             assert "not found" in response.data["error"]
 
     def test_calculate_metric_success(self):
         """Test successful metric calculation"""
-        from rest_framework.test import APIRequestFactory
+        from rest_framework.test import APIClient
 
         from apps.analytics.authentication import AnalyticsUser
-        from apps.analytics.views import calculate_metric
 
-        factory = APIRequestFactory()
+        client = APIClient()
+        user_data = {"user_id": 123, "email": "test@example.com", "role": "admin"}
+        user = AnalyticsUser(user_data)
+        client.force_authenticate(user=user)
+
         request_data = {
             "metric_name": "test_metric",
             "context": {"test": "context"},
             "cache_duration": 3600,
         }
-        request = factory.post("/api/calculate-metric/", request_data, format="json")
-
-        user_data = {"user_id": 123, "email": "test@example.com", "role": "admin"}
-        request.user = AnalyticsUser(user_data)
 
         with patch(
             "apps.analytics.views.AnalyticsCache.get_cached_data"
@@ -1026,7 +1019,7 @@ class TestCalculateMetricView:
             mock_calculator.calculate.return_value = {"calculated": "result"}
             mock_registry_instance.get_calculator.return_value = mock_calculator
 
-            response = calculate_metric(request)
+            response = client.post("/analytics/calculate/", request_data, format="json")
 
             assert response.status_code == 200
             assert response.data["cached"] is False
@@ -1035,21 +1028,20 @@ class TestCalculateMetricView:
 
     def test_calculate_metric_exception(self):
         """Test calculate metric with exception"""
-        from rest_framework.test import APIRequestFactory
+        from rest_framework.test import APIClient
 
         from apps.analytics.authentication import AnalyticsUser
-        from apps.analytics.views import calculate_metric
 
-        factory = APIRequestFactory()
+        client = APIClient()
+        user_data = {"user_id": 123, "email": "test@example.com", "role": "admin"}
+        user = AnalyticsUser(user_data)
+        client.force_authenticate(user=user)
+
         request_data = {
             "metric_name": "test_metric",
             "context": {"test": "context"},
             "cache_duration": 3600,
         }
-        request = factory.post("/api/calculate-metric/", request_data, format="json")
-
-        user_data = {"user_id": 123, "email": "test@example.com", "role": "admin"}
-        request.user = AnalyticsUser(user_data)
 
         with patch(
             "apps.analytics.views.AnalyticsCache.get_cached_data"
@@ -1059,7 +1051,7 @@ class TestCalculateMetricView:
             mock_cache.return_value = None
             mock_registry.side_effect = Exception("Registry failed")
 
-            response = calculate_metric(request)
+            response = client.post("/analytics/calculate/", request_data, format="json")
 
             assert response.status_code == 500
             assert "calculation failed" in response.data["error"]
@@ -1071,18 +1063,14 @@ class TestAnalyticsDashboard:
 
     def test_analytics_dashboard_with_dates(self):
         """Test analytics dashboard with provided dates"""
-        from rest_framework.test import APIRequestFactory
+        from rest_framework.test import APIClient
 
         from apps.analytics.authentication import AnalyticsUser
-        from apps.analytics.views import analytics_dashboard
 
-        factory = APIRequestFactory()
-        request = factory.get(
-            "/api/dashboard/?start_date=2024-01-01T00:00:00Z&end_date=2024-01-31T23:59:59Z"
-        )
-
+        client = APIClient()
         user_data = {"user_id": 123, "email": "test@example.com", "role": "admin"}
-        request.user = AnalyticsUser(user_data)
+        user = AnalyticsUser(user_data)
+        client.force_authenticate(user=user)
 
         with patch("apps.analytics.views.MetricCalculatorRegistry") as mock_registry:
             mock_registry_instance = mock_registry.return_value
@@ -1090,7 +1078,9 @@ class TestAnalyticsDashboard:
             mock_calculator.calculate.return_value = {"test": "data"}
             mock_registry_instance.get_calculator.return_value = mock_calculator
 
-            response = analytics_dashboard(request)
+            response = client.get(
+                "/analytics/dashboard/?start_date=2024-01-01T00:00:00Z&end_date=2024-01-31T23:59:59Z"
+            )
 
             assert response.status_code == 200
             assert "period" in response.data
@@ -1100,16 +1090,14 @@ class TestAnalyticsDashboard:
 
     def test_analytics_dashboard_without_dates(self):
         """Test analytics dashboard without provided dates (default 30 days)"""
-        from rest_framework.test import APIRequestFactory
+        from rest_framework.test import APIClient
 
         from apps.analytics.authentication import AnalyticsUser
-        from apps.analytics.views import analytics_dashboard
 
-        factory = APIRequestFactory()
-        request = factory.get("/api/dashboard/")
-
+        client = APIClient()
         user_data = {"user_id": 123, "email": "test@example.com", "role": "admin"}
-        request.user = AnalyticsUser(user_data)
+        user = AnalyticsUser(user_data)
+        client.force_authenticate(user=user)
 
         with patch("apps.analytics.views.MetricCalculatorRegistry") as mock_registry:
             mock_registry_instance = mock_registry.return_value
@@ -1117,29 +1105,27 @@ class TestAnalyticsDashboard:
             mock_calculator.calculate.return_value = {"test": "data"}
             mock_registry_instance.get_calculator.return_value = mock_calculator
 
-            response = analytics_dashboard(request)
+            response = client.get("/analytics/dashboard/")
 
             assert response.status_code == 200
             assert "period" in response.data
 
     def test_analytics_dashboard_no_calculators(self):
         """Test analytics dashboard when calculators are not available"""
-        from rest_framework.test import APIRequestFactory
+        from rest_framework.test import APIClient
 
         from apps.analytics.authentication import AnalyticsUser
-        from apps.analytics.views import analytics_dashboard
 
-        factory = APIRequestFactory()
-        request = factory.get("/api/dashboard/")
-
+        client = APIClient()
         user_data = {"user_id": 123, "email": "test@example.com", "role": "admin"}
-        request.user = AnalyticsUser(user_data)
+        user = AnalyticsUser(user_data)
+        client.force_authenticate(user=user)
 
         with patch("apps.analytics.views.MetricCalculatorRegistry") as mock_registry:
             mock_registry_instance = mock_registry.return_value
             mock_registry_instance.get_calculator.return_value = None
 
-            response = analytics_dashboard(request)
+            response = client.get("/analytics/dashboard/")
 
             assert response.status_code == 200
             assert "metrics" in response.data
@@ -1147,21 +1133,19 @@ class TestAnalyticsDashboard:
 
     def test_analytics_dashboard_exception(self):
         """Test analytics dashboard with exception"""
-        from rest_framework.test import APIRequestFactory
+        from rest_framework.test import APIClient
 
         from apps.analytics.authentication import AnalyticsUser
-        from apps.analytics.views import analytics_dashboard
 
-        factory = APIRequestFactory()
-        request = factory.get("/api/dashboard/")
-
+        client = APIClient()
         user_data = {"user_id": 123, "email": "test@example.com", "role": "admin"}
-        request.user = AnalyticsUser(user_data)
+        user = AnalyticsUser(user_data)
+        client.force_authenticate(user=user)
 
         with patch("apps.analytics.views.MetricCalculatorRegistry") as mock_registry:
             mock_registry.side_effect = Exception("Dashboard failed")
 
-            response = analytics_dashboard(request)
+            response = client.get("/analytics/dashboard/")
 
             assert response.status_code == 500
             assert "Dashboard data generation failed" in response.data["error"]
