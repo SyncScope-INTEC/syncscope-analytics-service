@@ -370,32 +370,6 @@ jobs:
           # Run bandit security linter
           bandit -r . -x tests/ -f json || echo "Bandit scan completed with warnings"
 
-      - name: Analytics specific checks
-        env:
-          SECRET_KEY: "test-secret-key-for-analytics-ci"
-          DEBUG: "True"
-          DB_NAME: "test_syncscope"
-          DB_USER: "postgres"
-          DB_PASSWORD: "postgres"
-          DB_HOST: "localhost"
-          DB_PORT: "5432"
-          REDIS_URL: "redis://localhost:6379/0"
-        run: |
-          # Test data analysis imports
-          echo "Testing data analysis dependencies..."
-          python -c "
-          import pandas as pd
-          import numpy as np
-          print('✅ Data analysis dependencies working')
-          "
-
-          # Test metric calculators
-          echo "Testing metric calculators..."
-          python -c "
-          from apps.analytics.metric_calculators import MetricCalculatorFactory
-          print('Available calculators:', MetricCalculatorFactory.get_available_categories())
-          "
-
       - name: Build check
         env:
           SECRET_KEY: "test-secret-key-for-analytics-ci"

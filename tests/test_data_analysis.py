@@ -1,11 +1,12 @@
 """
 Tests for data_analysis.py module.
 """
-import pytest
-import pandas as pd
-import numpy as np
 from datetime import datetime, timedelta
-from unittest.mock import patch, MagicMock
+from unittest.mock import MagicMock, patch
+
+import numpy as np
+import pandas as pd
+import pytest
 
 from apps.analytics.data_analysis import (
     DataFrameProcessor,
@@ -59,10 +60,17 @@ class TestDataFrameProcessor:
     def test_create_dataframe_error_handling(self, mock_logger):
         """Test error handling in create_dataframe."""
         # Pass invalid data that will cause an error
-        with patch("pandas.DataFrame", side_effect=Exception("Test error")):
+        # Mock only the first call, let the second call succeed
+        with patch("apps.analytics.data_analysis.pd.DataFrame") as mock_df:
+            # Create a real empty DataFrame for the second call
+            empty_df = pd.DataFrame()
+            # First call fails, second call returns empty DataFrame
+            mock_df.side_effect = [Exception("Test error"), empty_df]
+
             df = DataFrameProcessor.create_dataframe([{"test": "data"}])
 
-            assert isinstance(df, pd.DataFrame)
+            # Check that we got the empty DataFrame back
+            assert df is empty_df
             assert len(df) == 0
             mock_logger.error.assert_called_once()
 
@@ -838,8 +846,8 @@ class TestOptimizeDataframeMemory:
         df = pd.DataFrame(
             {
                 "small_int": [1, 2, 3, 4, 5],  # Can be int8
-                "medium_int": [1000, 2000, 3000],  # Needs int16 or int32
-                "large_int": [100000, 200000, 300000],  # Needs int32
+                "medium_int": [1000, 2000, 3000, 4000, 5000],  # Needs int16 or int32
+                "large_int": [100000, 200000, 300000, 400000, 500000],  # Needs int32
             }
         )
 
@@ -893,7 +901,7 @@ class TestOptimizeDataframeMemory:
         """Test error handling in optimize_dataframe_memory."""
         df = pd.DataFrame({"col": [1, 2, 3]})
 
-        with patch("pandas.DataFrame.min", side_effect=Exception("Test error")):
+        with patch("pandas.Series.min", side_effect=Exception("Test error")):
             result = optimize_dataframe_memory(df)
 
             mock_logger.error.assert_called_once()
