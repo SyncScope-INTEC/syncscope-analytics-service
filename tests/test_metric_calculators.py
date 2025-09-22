@@ -1,6 +1,7 @@
 """
 Tests for metric_calculators.py module.
 """
+
 from datetime import datetime, timedelta
 from decimal import Decimal
 from unittest.mock import MagicMock, patch

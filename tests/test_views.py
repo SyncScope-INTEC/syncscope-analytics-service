@@ -975,11 +975,10 @@ class TestCalculateMetricView:
             "cache_duration": 3600,
         }
 
-        with patch(
-            "apps.analytics.views.AnalyticsCache.get_cached_data"
-        ) as mock_cache, patch(
-            "apps.analytics.views.MetricCalculatorRegistry"
-        ) as mock_registry:
+        with (
+            patch("apps.analytics.views.AnalyticsCache.get_cached_data") as mock_cache,
+            patch("apps.analytics.views.MetricCalculatorRegistry") as mock_registry,
+        ):
             mock_cache.return_value = None
             mock_registry_instance = mock_registry.return_value
             mock_registry_instance.get_calculator.return_value = None
@@ -1006,13 +1005,11 @@ class TestCalculateMetricView:
             "cache_duration": 3600,
         }
 
-        with patch(
-            "apps.analytics.views.AnalyticsCache.get_cached_data"
-        ) as mock_cache, patch(
-            "apps.analytics.views.AnalyticsCache.cache_data"
-        ) as mock_cache_set, patch(
-            "apps.analytics.views.MetricCalculatorRegistry"
-        ) as mock_registry:
+        with (
+            patch("apps.analytics.views.AnalyticsCache.get_cached_data") as mock_cache,
+            patch("apps.analytics.views.AnalyticsCache.cache_data") as mock_cache_set,
+            patch("apps.analytics.views.MetricCalculatorRegistry") as mock_registry,
+        ):
             mock_cache.return_value = None
             mock_registry_instance = mock_registry.return_value
             mock_calculator = MagicMock()
@@ -1043,11 +1040,10 @@ class TestCalculateMetricView:
             "cache_duration": 3600,
         }
 
-        with patch(
-            "apps.analytics.views.AnalyticsCache.get_cached_data"
-        ) as mock_cache, patch(
-            "apps.analytics.views.MetricCalculatorRegistry"
-        ) as mock_registry:
+        with (
+            patch("apps.analytics.views.AnalyticsCache.get_cached_data") as mock_cache,
+            patch("apps.analytics.views.MetricCalculatorRegistry") as mock_registry,
+        ):
             mock_cache.return_value = None
             mock_registry.side_effect = Exception("Registry failed")
 

@@ -1,6 +1,7 @@
 """
 Tests for service_integration.py module.
 """
+
 from datetime import datetime, timedelta
 from unittest.mock import MagicMock, patch
 
