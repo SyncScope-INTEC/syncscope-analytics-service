@@ -839,8 +839,8 @@ class TestOptimizeDataframeMemory:
         df = pd.DataFrame(
             {
                 "small_int": [1, 2, 3, 4, 5],  # Can be int8
-                "medium_int": [1000, 2000, 3000],  # Needs int16 or int32
-                "large_int": [100000, 200000, 300000],  # Needs int32
+                "medium_int": [1000, 2000, 3000, 4000, 5000],  # Needs int16 or int32
+                "large_int": [100000, 200000, 300000, 400000, 500000],  # Needs int32
             }
         )
 
