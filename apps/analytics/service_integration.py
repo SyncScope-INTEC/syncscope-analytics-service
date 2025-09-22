@@ -105,15 +105,15 @@ class BaseServiceClient:
                 )
                 raise requests.RequestException(f"{response.status_code} Error: {url}")
 
+        except (requests.exceptions.Timeout, requests.Timeout) as e:
+            logger.error(f"Timeout requesting {self.service_name} endpoint: {endpoint}")
+            raise requests.RequestException("Timeout")
+        except (requests.exceptions.ConnectionError, requests.ConnectionError) as e:
+            logger.error(f"Connection error to {self.service_name}: {endpoint}")
+            raise requests.RequestException("Connection error")
         except requests.RequestException:
             # Re-raise RequestException without additional logging
             raise
-        except (requests.exceptions.Timeout, requests.Timeout) as e:
-            logger.error(f"Timeout requesting {self.service_name} endpoint: {endpoint}")
-            raise requests.RequestException("Timeout") from e
-        except (requests.exceptions.ConnectionError, requests.ConnectionError) as e:
-            logger.error(f"Connection error to {self.service_name}: {endpoint}")
-            raise requests.RequestException("Connection error") from e
         except ValueError as e:
             logger.error(
                 f"Error requesting {self.service_name} endpoint {endpoint}: {e}"
@@ -162,12 +162,10 @@ class MonitoringServiceClient(BaseServiceClient):
         self.session = requests.Session()
         self.timeout = getattr(settings, "SERVICE_TIMEOUT", 30)
 
-    def get_user_sessions(
-        self, user_id: str, start_date: Any, end_date: Any
-    ) -> List[Dict]:
+    def get_user_sessions(self, user_id: str, start_date: Any, end_date: Any) -> dict:
         """
         Get user development sessions from monitoring service
-        Returns list of sessions for test compatibility
+        Returns dict with 'sessions' key for test compatibility
         """
         params = {
             "user_id": user_id,
@@ -175,15 +173,15 @@ class MonitoringServiceClient(BaseServiceClient):
             "end_date": self._format_datetime(end_date),
         }
         result = self._make_request("GET", "/api/sessions/", params=params)
-        # Handle different response formats
-        if isinstance(result, list):
+        # For test compatibility, return {'sessions': ...}
+        if result and "sessions" in result:
             return result
-        elif result and "sessions" in result:
-            return result["sessions"]
         elif result and "results" in result:
-            return result["results"]
+            return {"sessions": result["results"]}
+        elif isinstance(result, list):
+            return {"sessions": result}
         else:
-            return []
+            return {"sessions": []}
 
     def get_project_activity(
         self, project_id: str, start_date: Any, end_date: Any
@@ -696,11 +694,9 @@ class ServiceIntegrationManager:
         """
         return {
             "user_context": self.get_user_context(user_id),
-            "sessions": {
-                "sessions": self.monitoring.get_user_sessions(
-                    user_id, start_date, end_date
-                )
-            },
+            "sessions": self.monitoring.get_user_sessions(
+                user_id, start_date, end_date
+            ),
             "git_activity": self.monitoring.get_user_git_activity(
                 user_id, start_date, end_date
             ),
@@ -734,7 +730,15 @@ class ServiceIntegrationManager:
         """
         # Get data from each service
         profile = self.auth.get_user_profile(user_id)
-        sessions = self.monitoring.get_user_sessions(user_id, start_date, end_date)
+        sessions_data = self.monitoring.get_user_sessions(user_id, start_date, end_date)
+
+        # Handle sessions_data which might be a dict with 'sessions' key or a list directly
+        if isinstance(sessions_data, dict):
+            sessions = sessions_data.get("sessions", [])
+        elif isinstance(sessions_data, list):
+            sessions = sessions_data
+        else:
+            sessions = []
 
         return {
             "profile": profile,
@@ -770,18 +774,30 @@ class ServiceIntegrationManager:
         management_status = self.management.check_health()
         auth_status = self.auth.check_health()
 
-        # Determine overall status
-        all_healthy = all(
-            status.get("status") == "healthy"
-            for status in [monitoring_status, management_status, auth_status]
-            if status is not None
+        # Normalize individual statuses
+        monitoring_result = monitoring_status or {"status": "unhealthy"}
+        management_result = management_status or {"status": "unhealthy"}
+        auth_result = auth_status or {"status": "unhealthy"}
+
+        # Count healthy services
+        statuses = [monitoring_result, management_result, auth_result]
+        healthy_count = sum(
+            1 for status in statuses if status.get("status") == "healthy"
         )
 
+        # Determine overall status
+        if healthy_count == 3:
+            overall_status = "healthy"
+        elif healthy_count == 0:
+            overall_status = "unhealthy"
+        else:
+            overall_status = "degraded"
+
         return {
-            "monitoring": monitoring_status or {"status": "unavailable"},
-            "management": management_status or {"status": "unavailable"},
-            "auth": auth_status or {"status": "unavailable"},
-            "overall_status": "healthy" if all_healthy else "unhealthy",
+            "monitoring": monitoring_result,
+            "management": management_result,
+            "auth": auth_result,
+            "overall_status": overall_status,
         }
 
 

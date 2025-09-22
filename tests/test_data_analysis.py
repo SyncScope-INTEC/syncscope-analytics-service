@@ -60,13 +60,17 @@ class TestDataFrameProcessor:
     def test_create_dataframe_error_handling(self, mock_logger):
         """Test error handling in create_dataframe."""
         # Pass invalid data that will cause an error
-        with patch(
-            "apps.analytics.data_analysis.pd.DataFrame",
-            side_effect=Exception("Test error"),
-        ):
+        # Mock only the first call, let the second call succeed
+        with patch("apps.analytics.data_analysis.pd.DataFrame") as mock_df:
+            # Create a real empty DataFrame for the second call
+            empty_df = pd.DataFrame()
+            # First call fails, second call returns empty DataFrame
+            mock_df.side_effect = [Exception("Test error"), empty_df]
+
             df = DataFrameProcessor.create_dataframe([{"test": "data"}])
 
-            assert isinstance(df, pd.DataFrame)
+            # Check that we got the empty DataFrame back
+            assert df is empty_df
             assert len(df) == 0
             mock_logger.error.assert_called_once()
 
