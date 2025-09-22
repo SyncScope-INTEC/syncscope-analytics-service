@@ -190,16 +190,18 @@ class ReportViewSet(ServerlessViewMixin, viewsets.ModelViewSet):
             generator = ReportGenerator()
 
             # Generate report based on type
-            if report.report_type == "productivity":
+            if report.type == "productivity":
                 report.data = generator.generate_productivity_report(report.config)
-            elif report.report_type == "code_quality":
+            elif report.type == "code_quality":
                 report.data = generator.generate_code_quality_report(report.config)
-            elif report.report_type == "team_collaboration":
+            elif (
+                report.type == "team_collaboration" or report.type == "team_performance"
+            ):
                 report.data = generator.generate_collaboration_report(report.config)
-            elif report.report_type == "custom":
+            elif report.type == "custom":
                 report.data = generator.generate_custom_report(report.config)
             else:
-                report.data = {"error": f"Unknown report type: {report.report_type}"}
+                report.data = {"error": f"Unknown report type: {report.type}"}
                 report.status = "failed"
                 report.save(update_fields=["status", "data"])
                 return

@@ -1,39 +1,39 @@
 # SyncScope Analytics Service
 
-[![Build Status](https://github.com/AlejandroBeltre/syncscope-analytics-service/workflows/CI/badge.svg)](https://github.com/AlejandroBeltre/syncscope-analytics-service/actions)
-[![Coverage Status](https://coveralls.io/repos/github/AlejandroBeltre/syncscope-analytics-service/badge.svg?branch=main)](https://coveralls.io/github/AlejandroBeltre/syncscope-analytics-service?branch=main)
+[![License](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
+[![Status](https://img.shields.io/badge/status-development-orange.svg)](https://github.com/SyncScope-INTEC/syncscope-analytics-service)
 [![Python Version](https://img.shields.io/badge/python-3.11+-blue.svg)](https://python.org)
 [![Django Version](https://img.shields.io/badge/django-4.2+-green.svg)](https://djangoproject.com)
 
 The **Analytics Service** is a core component of the SyncScope developer productivity monitoring platform. It provides comprehensive analytics, reporting, and data processing capabilities for developer productivity metrics, code quality analysis, and team collaboration insights.
 
-## 🚀 Features
+## Features
 
-### 📊 Analytics Engine
+### Analytics Engine
 - **Real-time Metric Calculations**: Advanced productivity, code quality, and collaboration metrics
 - **Statistical Analysis**: Comprehensive statistical processing with pandas and numpy
 - **Trend Detection**: Time series analysis and pattern recognition
 - **Anomaly Detection**: Automated detection of unusual patterns in developer behavior
 
-### 📈 Report Generation
+### Report Generation
 - **12 Report Types**: Productivity, code quality, team collaboration, performance, security, and more
 - **Multiple Export Formats**: PDF, Excel, CSV, and JSON exports with professional formatting
 - **Async Processing**: Non-blocking report generation for large datasets
 - **Regeneration Support**: Refresh reports with latest data
 
-### 🗃️ Data Integration
+### Data Integration
 - **PostgreSQL**: Primary data storage with analytics schema
 - **InfluxDB**: Time series metrics storage for high-frequency data
 - **Redis**: Caching layer for performance optimization
 - **Service Integration**: HTTP clients for Auth, Monitoring, and Management services
 
-### 🔒 Security & Performance
+### Security & Performance
 - **JWT Authentication**: Secure service-to-service communication
 - **Rate Limiting**: API endpoint protection and abuse prevention
 - **Caching Strategy**: Intelligent caching for metric calculations
 - **Permission System**: Role-based access control
 
-## 🏗️ Architecture
+## Architecture
 
 SyncScope follows a **Service-Based Architecture (SBA)** with clear separation of concerns:
 
@@ -65,7 +65,7 @@ SyncScope follows a **Service-Based Architecture (SBA)** with clear separation o
                    └─────────────────────────────┘
 ```
 
-## 🛠️ Technology Stack
+## Technology Stack
 
 - **Framework**: Django 4.2+ with Django REST Framework
 - **Language**: Python 3.11+
@@ -78,7 +78,7 @@ SyncScope follows a **Service-Based Architecture (SBA)** with clear separation o
 - **Export**: ReportLab (PDF), openpyxl (Excel)
 - **Deployment**: Docker, Railway Platform
 
-## 📋 Prerequisites
+## Prerequisites
 
 - Python 3.11+
 - PostgreSQL 14+
@@ -86,11 +86,11 @@ SyncScope follows a **Service-Based Architecture (SBA)** with clear separation o
 - InfluxDB 2.0+
 - Git
 
-## 🚀 Quick Start
+## Quick Start
 
 ### 1. Clone the Repository
 ```bash
-git clone https://github.com/AlejandroBeltre/syncscope-analytics-service.git
+git clone https://github.com/SyncScope-INTEC/syncscope-analytics-service.git
 cd syncscope-analytics-service
 ```
 
@@ -126,7 +126,7 @@ python manage.py runserver
 
 The service will be available at `http://localhost:8000`
 
-## ⚙️ Configuration
+## Configuration
 
 ### Environment Variables
 
@@ -159,7 +159,7 @@ DATABASES = {
 }
 ```
 
-## 📊 API Reference
+## API Reference
 
 ### Core Endpoints
 
@@ -229,7 +229,7 @@ curl -X POST http://localhost:8000/api/calculate/ \
   }'
 ```
 
-## 📊 Analytics Features
+## Analytics Features
 
 ### Metric Calculators
 
@@ -289,7 +289,7 @@ The service includes 10 comprehensive metric calculators:
 - **Predictive Modeling**: ML-based predictions and forecasting
 - **Data Visualization**: Chart and graph generation for reports
 
-## 🧪 Testing
+## Testing
 
 ### Running Tests
 ```bash
@@ -333,7 +333,7 @@ The test suite provides comprehensive coverage:
 
 Target coverage: **90%+**
 
-## 🚀 Deployment
+## Deployment
 
 ### Docker Deployment
 
@@ -372,7 +372,7 @@ docker run -d \
 - [ ] Configure rate limiting
 - [ ] Test health check endpoints
 
-## 🔍 Monitoring & Observability
+## Monitoring & Observability
 
 ### Health Checks
 
@@ -405,7 +405,7 @@ Response format:
 - **Error Tracking**: Comprehensive error logging and tracking
 - **Performance Monitoring**: Response times and resource usage
 
-## 🤝 Development
+## Development
 
 ### Project Structure
 ```
@@ -459,7 +459,7 @@ syncscope-analytics-service/
 - Test coverage must be maintained
 - Documentation must be updated
 
-## 📚 Documentation
+## Documentation
 
 ### API Documentation
 - **Interactive Docs**: `http://localhost:8000/api/docs/`
@@ -472,7 +472,7 @@ syncscope-analytics-service/
 - [Deployment Guide](docs/deployment.md)
 - [Contributing Guidelines](CONTRIBUTING.md)
 
-## 🐛 Troubleshooting
+## Troubleshooting
 
 ### Common Issues
 
@@ -535,7 +535,7 @@ python manage.py runserver --verbosity=2
 tail -f logs/analytics.log
 ```
 
-## 📝 Changelog
+## Changelog
 
 ### v1.0.0 (2024-01-01)
 - Initial release
@@ -553,24 +553,24 @@ tail -f logs/analytics.log
 - Mobile API endpoints
 - Enhanced visualization capabilities
 
-## 📄 License
+## License
 
 This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
 
-## 🙏 Acknowledgments
+## Acknowledgments
 
 - **SyncScope Team** for architecture guidance and requirements
 - **Django Community** for the excellent framework
 - **pandas/numpy Teams** for powerful data analysis tools
 - **InfluxDB Team** for time series database capabilities
 
-## 📞 Support
+## Support
 
 For support, please contact:
 - **Email**: support@syncscope.dev
-- **Issues**: [GitHub Issues](https://github.com/AlejandroBeltre/syncscope-analytics-service/issues)
+- **Issues**: [GitHub Issues](https://github.com/SyncScope-INTEC/syncscope-analytics-service/issues)
 - **Documentation**: [Official Docs](https://docs.syncscope.dev)
 
 ---
 
-**Built with ❤️ by the SyncScope Team**
+**Built by the SyncScope Team**

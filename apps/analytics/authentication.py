@@ -100,6 +100,9 @@ class JWTAuthentication(authentication.BaseAuthentication):
         except jwt.InvalidTokenError as e:
             logger.warning(f"Invalid JWT token: {e}")
             raise exceptions.AuthenticationFailed("Invalid token")
+        except exceptions.AuthenticationFailed:
+            # Re-raise specific authentication failures without modifying the message
+            raise
         except Exception as e:
             logger.error(f"Authentication error: {e}")
             raise exceptions.AuthenticationFailed("Authentication failed")

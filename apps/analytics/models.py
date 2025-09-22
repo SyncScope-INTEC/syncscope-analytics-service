@@ -346,6 +346,35 @@ class AnalyticsCache(RetryableModelMixin, TimestampMixin, models.Model):
             "total_size_mb": round(total_size / (1024 * 1024), 2) if total_size else 0,
         }
 
+    @classmethod
+    def get_cached_data(cls, cache_key):
+        """Get cached data by key."""
+        try:
+            cache_entry = cls.objects.get(
+                cache_key=cache_key, expires_at__gt=timezone.now()
+            )
+            cache_entry.increment_hit_count()
+            return cache_entry.data
+        except cls.DoesNotExist:
+            return None
+
+    @classmethod
+    def cache_data(cls, cache_key, data, duration_seconds, cache_type="metric_result"):
+        """Cache data with expiration."""
+        expires_at = timezone.now() + timezone.timedelta(seconds=duration_seconds)
+
+        # Update existing or create new
+        cache_entry, created = cls.objects.update_or_create(
+            cache_key=cache_key,
+            defaults={
+                "data": data,
+                "cache_type": cache_type,
+                "expires_at": expires_at,
+                "hit_count": 0 if created else models.F("hit_count"),
+            },
+        )
+        return cache_entry
+
     @atomic_with_retry()
     def save(self, *args, **kwargs):
         # Calculate data size if not set

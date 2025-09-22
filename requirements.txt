@@ -1,13 +1,13 @@
 # Core Django dependencies
 Django==4.2.16
-djangorestframework==3.14.0
-django-cors-headers==4.3.1
 drf-spectacular==0.28.0
+djangorestframework==3.16.1
+django-cors-headers==4.9.0
 django-extensions==3.2.3
 
 # Database and Cache
 psycopg2-binary>=2.9.10
-django-redis==5.4.0
+django-redis==6.0.0
 dj-database-url==2.1.0
 
 # Authentication & Security
@@ -16,27 +16,27 @@ python-decouple==3.8
 django-ratelimit==4.1.0
 
 # Data Analysis & ML
-pandas==2.2.3
+pandas==2.3.2
 numpy==1.26.4
-scikit-learn==1.5.2
-matplotlib==3.9.2
+scikit-learn==1.6.1
+matplotlib==3.9.4
 seaborn==0.13.2
 
 
 # HTTP Requests
 requests==2.32.5
-httpx==0.25.2
+httpx==0.28.1
 
 # File Processing & Export
 reportlab==4.0.7
 openpyxl==3.1.5
 
 # Production
-gunicorn==21.2.0
+gunicorn==23.0.0
 whitenoise==6.6.0
 
 # Development
-python-dotenv==1.0.0
+python-dotenv==1.1.1
 black==23.12.1
 isort==5.13.2
 
@@ -44,4 +44,4 @@ isort==5.13.2
 pytest==8.4.2
 pytest-django==4.9.0
 pytest-cov==6.0.0
-coverage==7.10.6
+coverage==7.10.7
