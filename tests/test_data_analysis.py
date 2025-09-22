@@ -1,11 +1,12 @@
 """
 Tests for data_analysis.py module.
 """
-import pytest
-import pandas as pd
-import numpy as np
 from datetime import datetime, timedelta
-from unittest.mock import patch, MagicMock
+from unittest.mock import MagicMock, patch
+
+import numpy as np
+import pandas as pd
+import pytest
 
 from apps.analytics.data_analysis import (
     DataFrameProcessor,

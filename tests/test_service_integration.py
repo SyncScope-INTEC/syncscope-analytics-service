@@ -1,19 +1,20 @@
 """
 Tests for service_integration.py module.
 """
-import pytest
-import requests
 from datetime import datetime, timedelta
-from unittest.mock import patch, MagicMock
+from unittest.mock import MagicMock, patch
 
 from django.core.cache import cache
 from django.test import override_settings
 
+import pytest
+import requests
+
 from apps.analytics.service_integration import (
-    BaseServiceClient,
-    MonitoringServiceClient,
-    ManagementServiceClient,
     AuthServiceClient,
+    BaseServiceClient,
+    ManagementServiceClient,
+    MonitoringServiceClient,
     ServiceIntegrationManager,
 )
 
