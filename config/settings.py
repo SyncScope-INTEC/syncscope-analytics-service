@@ -233,6 +233,9 @@ if "RAILWAY_ENVIRONMENT" in os.environ:
     SECURE_PROXY_SSL_HEADER = ("HTTP_X_FORWARDED_PROTO", "https")
     SECURE_SSL_REDIRECT = False  # Railway handles this
 
+    # Suppress migration warnings on Railway since tables already exist with correct schema
+    SILENCED_SYSTEM_CHECKS = ['models.W042']
+
 # Session security
 SESSION_COOKIE_SECURE = not DEBUG
 SESSION_COOKIE_HTTPONLY = True
