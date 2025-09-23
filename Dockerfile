@@ -57,8 +57,9 @@ WORKDIR /app
 # Copy application code
 COPY --chown=analytics:analytics . .
 
-# Create necessary directories with proper permissions
-RUN mkdir -p /app/logs /app/static /app/media && \
+# Make start script executable and create necessary directories
+RUN chmod +x start.sh && \
+    mkdir -p /app/logs /app/static /app/media && \
     chown -R analytics:analytics /app
 
 # Switch to non-root user
@@ -69,13 +70,13 @@ RUN python manage.py collectstatic --noinput --clear
 
 # Health check
 HEALTHCHECK --interval=30s --timeout=10s --start-period=60s --retries=3 \
-    CMD curl -f http://localhost:8000/health/ || exit 1
+    CMD curl -f http://localhost:8080/health/ || exit 1
 
 # Expose port
-EXPOSE 8000
+EXPOSE 8080
 
-# Default command - can be overridden
-CMD ["gunicorn", "--bind", "0.0.0.0:8000", "--workers", "3", "--timeout", "60", "--max-requests", "1000", "--max-requests-jitter", "100", "config.wsgi:application"]
+# Default command - use start.sh script
+CMD ["./start.sh"]
 
 # Development stage (optional)
 FROM production as development
@@ -99,4 +100,4 @@ RUN if [ -f requirements-dev.txt ]; then pip install -r requirements-dev.txt; fi
 USER analytics
 
 # Override default command for development
-CMD ["python", "manage.py", "runserver", "0.0.0.0:8000"]
+CMD ["python", "manage.py", "runserver", "0.0.0.0:8080"]
