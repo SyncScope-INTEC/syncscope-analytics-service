@@ -38,6 +38,8 @@ class AnalyticsUser:
         self._user_data = user_data
 
     def __str__(self):
+        if self.first_name and self.last_name and self.email:
+            return f"{self.first_name} {self.last_name} ({self.email})"
         return f"AnalyticsUser({self.user_id})"
 
     @property
