@@ -14,6 +14,7 @@ from drf_spectacular.views import (
 )
 
 from apps.analytics.health import health_check
+from apps.analytics.simple_health_check import ultra_simple_health_check
 from apps.analytics.views import api_home
 
 urlpatterns = [
@@ -23,6 +24,8 @@ urlpatterns = [
     path("analytics/", include("apps.analytics.urls")),
     # Root health check
     path("health/", health_check, name="root_health_check"),
+    # Simple backup health check
+    path("health/simple/", ultra_simple_health_check, name="simple_health_check"),
     # API Documentation
     path("api/schema/", SpectacularAPIView.as_view(), name="schema"),
     path(

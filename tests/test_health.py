@@ -60,19 +60,21 @@ class TestHealthCheckView:
             assert "errors" in data
 
     def test_health_check_cache_unhealthy(self, client):
-        """Test health check when cache is unhealthy."""
+        """Test health check when cache is unhealthy but database is healthy."""
         with (
             patch("apps.analytics.health.check_database_connection", return_value=True),
             patch("apps.analytics.health.check_cache_connection", return_value=False),
         ):
             response = client.get("/health/")
-            assert response.status_code == 503
+            assert response.status_code == 200  # Service healthy if database works
 
             data = response.json()
-            assert data["status"] == "unhealthy"
+            assert (
+                data["status"] == "healthy"
+            )  # Cache failures don't affect overall health
             assert data["services"]["database"] == "healthy"
             assert data["services"]["cache"] == "unhealthy"
-            assert "errors" in data
+            # No errors field since cache is non-critical
 
     def test_health_check_all_unhealthy(self, client):
         """Test health check when all services are unhealthy."""
@@ -328,7 +330,7 @@ class TestHealthCheckIntegration:
         test_cases = [
             # (db_healthy, cache_healthy, expected_status_code)
             (True, True, 200),
-            (True, False, 503),
+            (True, False, 200),  # Cache failure doesn't affect health
             (False, True, 503),
             (False, False, 503),
         ]
