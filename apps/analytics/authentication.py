@@ -99,8 +99,8 @@ class JWTAuthentication(authentication.BaseAuthentication):
         Authenticate the JWT token and return user information.
         """
         try:
-            # Decode JWT token - simplified like monitoring service
-            payload = jwt.decode(token, settings.JWT_SECRET_KEY, algorithms=["HS256"])
+            # Decode JWT token - use same SECRET_KEY as auth service
+            payload = jwt.decode(token, settings.SECRET_KEY, algorithms=["HS256"])
 
             # Create user object from token payload
             user = AnalyticsUser(payload)
@@ -133,7 +133,7 @@ class ServiceAuthentication:
         Verify a service-to-service authentication token
         """
         try:
-            payload = jwt.decode(token, settings.JWT_SECRET_KEY, algorithms=["HS256"])
+            payload = jwt.decode(token, settings.SECRET_KEY, algorithms=["HS256"])
 
             # Check if it's a service token
             if payload.get("token_type") != "service":
@@ -164,7 +164,7 @@ class ServiceAuthentication:
             "iss": "syncscope-analytics",
         }
 
-        return jwt.encode(payload, settings.JWT_SECRET_KEY, algorithm="HS256")
+        return jwt.encode(payload, settings.SECRET_KEY, algorithm="HS256")
 
 
 class UserPermissions:

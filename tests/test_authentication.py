@@ -298,7 +298,7 @@ class TestServiceAuthentication:
         }
 
         mock_encode.assert_called_once_with(
-            expected_payload, settings.JWT_SECRET_KEY, algorithm="HS256"
+            expected_payload, settings.SECRET_KEY, algorithm="HS256"
         )
         assert token == "service_token_123"
 
@@ -320,7 +320,7 @@ class TestServiceAuthentication:
         }
 
         mock_encode.assert_called_once_with(
-            expected_payload, settings.JWT_SECRET_KEY, algorithm="HS256"
+            expected_payload, settings.SECRET_KEY, algorithm="HS256"
         )
         assert token == "default_token_123"
 

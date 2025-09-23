@@ -140,9 +140,9 @@ if not USE_SQLITE:
 
     if use_analytics_schema:
         # Set search path to include all schemas with analytics as priority
-        db_options["options"] = (
-            "-c search_path=analytics,auth,management,monitoring,alerts,audit,public -c statement_timeout=30000"
-        )
+        db_options[
+            "options"
+        ] = "-c search_path=analytics,auth,management,monitoring,alerts,audit,public -c statement_timeout=30000"
     else:
         db_options["options"] = "-c statement_timeout=30000"
 
@@ -326,8 +326,7 @@ MANAGEMENT_SERVICE_URL = config(
     "MANAGEMENT_SERVICE_URL", default="http://localhost:8003"
 )
 
-# JWT Configuration
-JWT_SECRET_KEY = config("JWT_SECRET_KEY", default=SECRET_KEY)
+# JWT Configuration - use same SECRET_KEY as auth service
 
 
 # Analytics Configuration
