@@ -23,16 +23,22 @@ class AnalyticsUser:
 
     def __init__(self, user_data):
         self.id = user_data.get("user_id")
+        self.pk = user_data.get("user_id")  # Add pk for django compatibility
+        self.user_id = user_data.get("user_id")
         self.email = user_data.get("email", "")
+        self.username = user_data.get("username", "")
         self.first_name = user_data.get("first_name", "")
         self.last_name = user_data.get("last_name", "")
         self.role = user_data.get("role", "developer")
         self.company_id = user_data.get("company_id")
         self.is_authenticated = True
         self.is_anonymous = False
+        self.is_staff = user_data.get("is_staff", False)
+        self.is_superuser = user_data.get("is_superuser", False)
+        self._user_data = user_data
 
     def __str__(self):
-        return f"{self.first_name} {self.last_name} ({self.email})"
+        return f"AnalyticsUser({self.user_id})"
 
     @property
     def full_name(self):
@@ -43,6 +49,22 @@ class AnalyticsUser:
 
     def is_supervisor(self):
         return self.role in ["admin", "supervisor"]
+
+    def has_perm(self, perm, obj=None):
+        """Check if user has permission."""
+        return self.is_staff or self.is_superuser
+
+    def has_perms(self, perm_list, obj=None):
+        """Check if user has multiple permissions."""
+        return all(self.has_perm(perm, obj) for perm in perm_list)
+
+    def has_module_perms(self, package_name):
+        """Check if user has permissions for a module."""
+        return self.is_staff or self.is_superuser
+
+    def get_user_data(self):
+        """Get original user data from token."""
+        return self._user_data
 
 
 class JWTAuthentication(authentication.BaseAuthentication):
@@ -75,22 +97,8 @@ class JWTAuthentication(authentication.BaseAuthentication):
         Authenticate the JWT token and return user information.
         """
         try:
-            # Decode JWT token
+            # Decode JWT token - simplified like monitoring service
             payload = jwt.decode(token, settings.JWT_SECRET_KEY, algorithms=["HS256"])
-
-            # Verify token type
-            if payload.get("token_type") != "access":
-                raise exceptions.AuthenticationFailed("Invalid token type")
-
-            # Check if token is expired
-            import time
-
-            if payload.get("exp", 0) < time.time():
-                raise exceptions.AuthenticationFailed("Token has expired")
-
-            # Verify issuer
-            if payload.get("iss") != "syncscope-auth":
-                raise exceptions.AuthenticationFailed("Invalid token issuer")
 
             # Create user object from token payload
             user = AnalyticsUser(payload)
@@ -100,9 +108,6 @@ class JWTAuthentication(authentication.BaseAuthentication):
         except jwt.InvalidTokenError as e:
             logger.warning(f"Invalid JWT token: {e}")
             raise exceptions.AuthenticationFailed("Invalid token")
-        except exceptions.AuthenticationFailed:
-            # Re-raise specific authentication failures without modifying the message
-            raise
         except Exception as e:
             logger.error(f"Authentication error: {e}")
             raise exceptions.AuthenticationFailed("Authentication failed")
