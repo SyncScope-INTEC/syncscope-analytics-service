@@ -99,7 +99,9 @@ class MetricDefinition(RetryableModelMixin, TimestampMixin, models.Model):
         indexes = [
             models.Index(fields=["name"], name="analytics.m_name_0fc87f_idx"),
             models.Index(fields=["category"], name="analytics.m_categor_b29ce5_idx"),
-            models.Index(fields=["calculation_method"], name="analytics.m_calcula_b6d501_idx"),
+            models.Index(
+                fields=["calculation_method"], name="analytics.m_calcula_b6d501_idx"
+            ),
             models.Index(fields=["is_active"], name="analytics.m_is_acti_f904fd_idx"),
         ]
 
@@ -298,8 +300,12 @@ class AnalyticsCache(RetryableModelMixin, TimestampMixin, models.Model):
             models.Index(fields=["cache_key"], name="analytics.a_cache_k_033971_idx"),
             models.Index(fields=["cache_type"], name="analytics.a_cache_t_ad5219_idx"),
             models.Index(fields=["expires_at"], name="analytics.a_expires_110ff1_idx"),
-            models.Index(fields=["source_metric_id"], name="analytics.a_source__c073b2_idx"),
-            models.Index(fields=["last_accessed"], name="analytics.a_last_ac_8793b0_idx"),
+            models.Index(
+                fields=["source_metric_id"], name="analytics.a_source__c073b2_idx"
+            ),
+            models.Index(
+                fields=["last_accessed"], name="analytics.a_last_ac_8793b0_idx"
+            ),
         ]
 
     def __str__(self):
@@ -442,7 +448,9 @@ class AlertRule(RetryableModelMixin, TimestampMixin, models.Model):
         db_table = get_table_name("alert_rules")
         ordering = ["name"]
         indexes = [
-            models.Index(fields=["metric_definition"], name="analytics.a_metric__4b656a_idx"),
+            models.Index(
+                fields=["metric_definition"], name="analytics.a_metric__4b656a_idx"
+            ),
             models.Index(fields=["is_active"], name="analytics.a_is_acti_53066b_idx"),
             models.Index(fields=["severity"], name="analytics.a_severit_e4196c_idx"),
         ]
@@ -509,13 +517,27 @@ class TimeSeriesData(RetryableModelMixin, models.Model):
         db_table = get_table_name("time_series_data")
         ordering = ["-timestamp"]
         indexes = [
-            models.Index(fields=["measurement", "timestamp"], name="analytics.t_measure_ca6e56_idx"),
-            models.Index(fields=["source", "timestamp"], name="analytics.t_source_aceab8_idx"),
-            models.Index(fields=["user_id", "timestamp"], name="analytics.t_user_id_f510c9_idx"),
-            models.Index(fields=["project_id", "timestamp"], name="analytics.t_project_7e4faa_idx"),
-            models.Index(fields=["team_id", "timestamp"], name="analytics.t_team_id_8cd44b_idx"),
+            models.Index(
+                fields=["measurement", "timestamp"],
+                name="analytics.t_measure_ca6e56_idx",
+            ),
+            models.Index(
+                fields=["source", "timestamp"], name="analytics.t_source_aceab8_idx"
+            ),
+            models.Index(
+                fields=["user_id", "timestamp"], name="analytics.t_user_id_f510c9_idx"
+            ),
+            models.Index(
+                fields=["project_id", "timestamp"],
+                name="analytics.t_project_7e4faa_idx",
+            ),
+            models.Index(
+                fields=["team_id", "timestamp"], name="analytics.t_team_id_8cd44b_idx"
+            ),
             models.Index(fields=["timestamp"], name="analytics.t_timesta_5ae1c9_idx"),
-            models.Index(fields=["measurement", "source"], name="analytics.t_measure_849f3b_idx"),
+            models.Index(
+                fields=["measurement", "source"], name="analytics.t_measure_849f3b_idx"
+            ),
         ]
 
     def __str__(self):
@@ -660,11 +682,26 @@ class MetricSnapshot(RetryableModelMixin, models.Model):
         db_table = get_table_name("metric_snapshots")
         ordering = ["-snapshot_time"]
         indexes = [
-            models.Index(fields=["metric_definition", "snapshot_time"], name="analytics.m_metric__19ef62_idx"),
-            models.Index(fields=["user_id", "snapshot_time"], name="analytics.m_user_id_a94f3c_idx"),
-            models.Index(fields=["project_id", "snapshot_time"], name="analytics.m_project_7e664e_idx"),
-            models.Index(fields=["team_id", "snapshot_time"], name="analytics.m_team_id_30fc83_idx"),
-            models.Index(fields=["period_start", "period_end"], name="analytics.m_period__951d20_idx"),
+            models.Index(
+                fields=["metric_definition", "snapshot_time"],
+                name="analytics.m_metric__19ef62_idx",
+            ),
+            models.Index(
+                fields=["user_id", "snapshot_time"],
+                name="analytics.m_user_id_a94f3c_idx",
+            ),
+            models.Index(
+                fields=["project_id", "snapshot_time"],
+                name="analytics.m_project_7e664e_idx",
+            ),
+            models.Index(
+                fields=["team_id", "snapshot_time"],
+                name="analytics.m_team_id_30fc83_idx",
+            ),
+            models.Index(
+                fields=["period_start", "period_end"],
+                name="analytics.m_period__951d20_idx",
+            ),
         ]
         unique_together = [
             ["metric_definition", "snapshot_time", "user_id", "project_id", "team_id"]

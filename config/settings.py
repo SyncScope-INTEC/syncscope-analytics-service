@@ -234,7 +234,7 @@ if "RAILWAY_ENVIRONMENT" in os.environ:
     SECURE_SSL_REDIRECT = False  # Railway handles this
 
     # Suppress migration warnings on Railway since tables already exist with correct schema
-    SILENCED_SYSTEM_CHECKS = ['models.W042']
+    SILENCED_SYSTEM_CHECKS = ["models.W042"]
 
 # Session security
 SESSION_COOKIE_SECURE = not DEBUG
