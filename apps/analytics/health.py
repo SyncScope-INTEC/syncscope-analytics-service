@@ -3,18 +3,19 @@ Health check functions for SyncScope Analytics Service
 """
 
 import logging
-from datetime import datetime
-from typing import Any, Dict
+import time
 
+from django.conf import settings
 from django.core.cache import cache
 from django.db import connection
-from django.http import JsonResponse
-from django.utils import timezone
 
 from drf_spectacular.utils import extend_schema
 from rest_framework import status
 from rest_framework.decorators import api_view, permission_classes
 from rest_framework.permissions import AllowAny
+from rest_framework.response import Response
+
+from config.database_retry import retry_on_database_error
 
 logger = logging.getLogger(__name__)
 
@@ -22,23 +23,28 @@ logger = logging.getLogger(__name__)
 @extend_schema(
     tags=["Health"],
     summary="Health check endpoint",
-    description="Check the health status of the analytics service including database, Redis, and external services connectivity.",
+    description="Check the health status of the service including database and cache connections.",
     responses={
         200: {
             "type": "object",
             "properties": {
-                "status": {"type": "string", "enum": ["healthy", "unhealthy"]},
-                "timestamp": {"type": "string", "format": "date-time"},
-                "database": {"type": "boolean"},
-                "redis": {"type": "boolean"},
+                "status": {"type": "string", "example": "healthy"},
+                "timestamp": {"type": "string", "example": "2024-01-01T12:00:00Z"},
+                "version": {"type": "string", "example": "1.0.0"},
+                "services": {
+                    "type": "object",
+                    "properties": {
+                        "database": {"type": "string", "example": "healthy"},
+                        "cache": {"type": "string", "example": "healthy"},
+                    },
+                },
             },
         },
         503: {
             "type": "object",
             "properties": {
-                "status": {"type": "string"},
-                "timestamp": {"type": "string", "format": "date-time"},
-                "error": {"type": "string"},
+                "status": {"type": "string", "example": "unhealthy"},
+                "errors": {"type": "array", "items": {"type": "string"}},
             },
         },
     },
@@ -47,99 +53,138 @@ logger = logging.getLogger(__name__)
 @permission_classes([AllowAny])
 def health_check(request):
     """
-    Comprehensive health check endpoint
+    Health check endpoint for monitoring and load balancers.
     """
+    health_status = {
+        "status": "healthy",
+        "timestamp": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
+        "version": getattr(settings, "VERSION", "1.0.0"),
+        "services": {},
+    }
+
+    errors = []
+
+    # Check database connection with retry logic
     try:
-        # Get health status for core components
-        db_healthy = check_database_connection()
-        redis_healthy = check_redis_connection()
-
-        # More lenient health check - service is healthy if database is working
-        # Redis is nice to have but not critical for basic health
-        service_healthy = db_healthy
-
-        # Include detailed status for debugging
-        response_data = {
-            "status": "healthy" if service_healthy else "unhealthy",
-            "timestamp": timezone.now().isoformat(),
-            "database": db_healthy,
-            "redis": redis_healthy,
-            "service": "analytics",
-            "version": "1.0.0",
-        }
-
-        # Return 200 if service is basically functional (database working)
-        # Only return 503 if critical components are down
-        status_code = (
-            status.HTTP_200_OK
-            if service_healthy
-            else status.HTTP_503_SERVICE_UNAVAILABLE
-        )
-
-        logger.info(f"Health check result: {response_data}")
-        return JsonResponse(response_data, status=status_code)
-
+        if check_database_connection():
+            health_status["services"]["database"] = "healthy"
+        else:
+            health_status["services"]["database"] = "unhealthy"
+            errors.append("Database: Connection failed after retries")
     except Exception as e:
-        logger.error(f"Health check failed: {e}")
-        # Always return a basic healthy response if we can't check components
-        # This prevents deployment failures due to transient issues
-        return JsonResponse(
-            {
-                "status": "healthy",
-                "timestamp": timezone.now().isoformat(),
-                "error": str(e),
-                "service": "analytics",
-                "fallback": True,
-            },
-            status=status.HTTP_200_OK,
-        )
+        health_status["services"]["database"] = "unhealthy"
+        errors.append(f"Database: {str(e)}")
 
-
-def check_database_connection() -> bool:
-    """Check database connectivity"""
+    # Check cache/Redis connection
     try:
-        # Simple database query with minimal overhead
+        if check_cache_connection():
+            health_status["services"]["cache"] = "healthy"
+        else:
+            health_status["services"]["cache"] = "unhealthy"
+            errors.append("Cache: Connection failed")
+    except Exception as e:
+        health_status["services"]["cache"] = "unhealthy"
+        errors.append(f"Cache: {str(e)}")
+
+    # Determine overall status
+    if errors:
+        health_status["status"] = "unhealthy"
+        health_status["errors"] = errors
+        return Response(health_status, status=status.HTTP_503_SERVICE_UNAVAILABLE)
+
+    return Response(health_status, status=status.HTTP_200_OK)
+
+
+@retry_on_database_error(max_retries=2)
+def check_database_connection() -> bool:
+    """Check database connectivity with retry logic"""
+    try:
         with connection.cursor() as cursor:
             cursor.execute("SELECT 1")
             result = cursor.fetchone()
             return result is not None
     except Exception as e:
         logger.error(f"Database health check failed: {e}")
-        # In deployment environments, be more lenient
-        return True  # Assume healthy to prevent deployment failures
+        return False
 
 
-def check_redis_connection() -> bool:
-    """Check Redis connectivity with retry logic"""
-    from django.conf import settings
-
+def check_cache_connection() -> bool:
+    """Check cache connectivity"""
     try:
-        # Check if Redis is configured
+        # Check if cache is configured
         cache_backend = settings.CACHES["default"]["BACKEND"]
 
         # If using DummyCache, consider it "healthy" since it's intentional
         if "dummy" in cache_backend.lower():
-            logger.info("Using DummyCache backend - considering Redis healthy")
+            logger.info("Using DummyCache backend - considering cache healthy")
             return True
 
-        # Log Redis configuration for debugging
-        redis_url = getattr(settings, "REDIS_URL", None)
-        cache_location = settings.CACHES["default"].get("LOCATION", "N/A")
-        logger.info(
-            f"Redis health check - Backend: {cache_backend}, REDIS_URL: {redis_url}, Cache location: {cache_location}"
-        )
-
-        # Try to set and get a test value (single attempt for health check)
+        # Try to set and get a test value
         cache.set("health_check", "ok", timeout=10)
         result = cache.get("health_check")
         if result == "ok":
             return True
         else:
             logger.warning(
-                f"Redis health check: Value mismatch - expected 'ok', got '{result}'"
+                f"Cache health check: Value mismatch - expected 'ok', got '{result}'"
             )
             return False
 
     except Exception as e:
-        logger.error(f"Redis health check failed: {e}")
+        logger.error(f"Cache health check failed: {e}")
         return False
+
+
+@extend_schema(
+    tags=["Health"],
+    summary="Readiness check endpoint",
+    description="Check if the service is ready to accept requests.",
+    responses={
+        200: {
+            "type": "object",
+            "properties": {"status": {"type": "string", "example": "ready"}},
+        },
+        503: {
+            "type": "object",
+            "properties": {"status": {"type": "string", "example": "not ready"}},
+        },
+    },
+)
+@api_view(["GET"])
+@permission_classes([AllowAny])
+def readiness_check(request):
+    """
+    Readiness check endpoint for Kubernetes/Railway deployments.
+    """
+    try:
+        # Database check with retry logic
+        if check_database_connection():
+            return Response({"status": "ready"}, status=status.HTTP_200_OK)
+        else:
+            return Response(
+                {"status": "not ready"}, status=status.HTTP_503_SERVICE_UNAVAILABLE
+            )
+    except Exception:
+        return Response(
+            {"status": "not ready"}, status=status.HTTP_503_SERVICE_UNAVAILABLE
+        )
+
+
+@extend_schema(
+    tags=["Health"],
+    summary="Liveness check endpoint",
+    description="Check if the service is alive (basic endpoint for load balancers).",
+    responses={
+        200: {
+            "type": "object",
+            "properties": {"status": {"type": "string", "example": "alive"}},
+        }
+    },
+)
+@api_view(["GET"])
+@permission_classes([AllowAny])
+def liveness_check(request):
+    """
+    Simple liveness check - just returns 200 if the service is running.
+    """
+    return Response({"status": "alive"}, status=status.HTTP_200_OK)

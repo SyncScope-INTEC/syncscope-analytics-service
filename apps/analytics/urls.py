@@ -7,7 +7,7 @@ from django.urls import include, path
 from rest_framework.routers import DefaultRouter
 
 from . import views
-from .health import health_check
+from .health import health_check, liveness_check, readiness_check
 
 # Create router for ViewSets
 router = DefaultRouter()
@@ -21,4 +21,6 @@ urlpatterns = [
     path("calculate/", views.calculate_metric, name="calculate-metric"),
     path("dashboard/", views.analytics_dashboard, name="analytics-dashboard"),
     path("health/", health_check, name="analytics-health-check"),
+    path("ready/", readiness_check, name="analytics-readiness-check"),
+    path("live/", liveness_check, name="analytics-liveness-check"),
 ]
