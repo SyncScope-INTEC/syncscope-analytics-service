@@ -1,20 +1,14 @@
 #!/bin/bash
+
+# Exit on any error
 set -e
 
 echo "Starting SyncScope Analytics Service..."
 
-# Collect static files at runtime when environment variables are available
+# Collect static files (this needs environment variables)
 echo "Collecting static files..."
 python manage.py collectstatic --noinput
 
-# Run database migrations (for analytics schema) - don't fail if they take too long
-if [ "${SKIP_MIGRATE:-false}" != "true" ]; then
-    echo "Running database migrations..."
-    timeout 90s python manage.py migrate --fake-initial || echo "Migrations timed out or failed, continuing..."
-else
-    echo "Skipping database migrations (SKIP_MIGRATE=true)"
-fi
-
-# Start gunicorn
+# Start the gunicorn server
 echo "Starting Gunicorn server..."
 exec gunicorn --config gunicorn.conf.py config.wsgi:application
