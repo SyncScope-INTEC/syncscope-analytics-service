@@ -13,8 +13,12 @@ from drf_spectacular.views import (
     SpectacularSwaggerView,
 )
 
-from apps.analytics.health import health_check
-from apps.analytics.simple_health_check import ultra_simple_health_check
+from apps.analytics.health import (
+    health_check,
+    liveness_check,
+    readiness_check,
+    simple_health_check,
+)
 from apps.analytics.views import api_home
 
 urlpatterns = [
@@ -22,10 +26,13 @@ urlpatterns = [
     path("", api_home, name="api_home"),
     path("admin/", admin.site.urls),
     path("analytics/", include("apps.analytics.urls")),
-    # Root health check
-    path("health/", health_check, name="root_health_check"),
-    # Simple backup health check
-    path("health/simple/", ultra_simple_health_check, name="simple_health_check"),
+    # Health check endpoints
+    path(
+        "health/", simple_health_check, name="health_check"
+    ),  # Ultra-simple health check for Railway
+    path("health/detailed/", health_check, name="detailed_health_check"),
+    path("health/ready/", readiness_check, name="readiness_check"),
+    path("health/live/", liveness_check, name="liveness_check"),
     # API Documentation
     path("api/schema/", SpectacularAPIView.as_view(), name="schema"),
     path(
