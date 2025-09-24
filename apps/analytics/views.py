@@ -449,6 +449,7 @@ def analytics_dashboard(request):
             "start_date": start_date,
             "end_date": end_date,
             "dashboard": True,
+            "team_id": "default",  # Add default team_id for collaboration metrics
         }
 
         # Calculate key metrics
