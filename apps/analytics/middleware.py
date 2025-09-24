@@ -73,8 +73,12 @@ class RateLimitMiddleware(MiddlewareMixin):
         # Create cache key
         cache_key = f"ratelimit_analytics:{ip}:{request.path}"
 
-        # Get current count
-        current_count = cache.get(cache_key, 0)
+        # Get current count with error handling
+        try:
+            current_count = cache.get(cache_key, 0)
+        except Exception as e:
+            logger.warning(f"Cache get failed for rate limiting: {e}")
+            current_count = 0
 
         if current_count >= limit:
             return JsonResponse(
@@ -85,8 +89,11 @@ class RateLimitMiddleware(MiddlewareMixin):
                 status=429,
             )
 
-        # Increment counter
-        cache.set(cache_key, current_count + 1, window)
+        # Increment counter with error handling
+        try:
+            cache.set(cache_key, current_count + 1, window)
+        except Exception as e:
+            logger.warning(f"Cache set failed for rate limiting: {e}")
 
         # Store rate limit info for response headers
         request._rate_limit_info = {
@@ -168,18 +175,21 @@ class AnalyticsPerformanceMiddleware:
             endpoint = self._get_endpoint_name(request.path)
             cache_key = f"analytics_perf:{endpoint}"
 
-            # Get existing metrics
-            metrics = cache.get(
-                cache_key, {"total_requests": 0, "total_time": 0, "avg_time": 0}
-            )
+            try:
+                # Get existing metrics
+                metrics = cache.get(
+                    cache_key, {"total_requests": 0, "total_time": 0, "avg_time": 0}
+                )
 
-            # Update metrics
-            metrics["total_requests"] += 1
-            metrics["total_time"] += duration
-            metrics["avg_time"] = metrics["total_time"] / metrics["total_requests"]
+                # Update metrics
+                metrics["total_requests"] += 1
+                metrics["total_time"] += duration
+                metrics["avg_time"] = metrics["total_time"] / metrics["total_requests"]
 
-            # Store updated metrics (expire after 1 hour)
-            cache.set(cache_key, metrics, 3600)
+                # Store updated metrics (expire after 1 hour)
+                cache.set(cache_key, metrics, 3600)
+            except Exception as e:
+                logger.warning(f"Performance metrics cache failed: {e}")
 
             # Add performance headers
             response["X-Response-Time"] = f"{duration:.3f}s"
