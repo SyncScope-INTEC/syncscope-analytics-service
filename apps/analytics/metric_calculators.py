@@ -596,7 +596,15 @@ class MetricCalculatorFactory:
         "productivity": ProductivityMetricCalculator,
         "code_quality": CodeQualityMetricCalculator,
         "collaboration": CollaborationMetricCalculator,
+        "team_collaboration": CollaborationMetricCalculator,  # Add alias for team_collaboration
         "performance": PerformanceMetricCalculator,
+        # Add fallback mappings for other categories using existing calculators
+        "security": CodeQualityMetricCalculator,  # Security metrics can use code quality calculator
+        "efficiency": ProductivityMetricCalculator,  # Efficiency metrics can use productivity calculator
+        "engagement": CollaborationMetricCalculator,  # Engagement metrics can use collaboration calculator
+        "learning": ProductivityMetricCalculator,  # Learning metrics can use productivity calculator
+        "deployment": PerformanceMetricCalculator,  # Deployment metrics can use performance calculator
+        "innovation": ProductivityMetricCalculator,  # Innovation metrics can use productivity calculator
     }
 
     @classmethod
