@@ -699,6 +699,7 @@ class MetricCalculatorRegistry:
                     "parameters": {},
                     "id": None,
                     "name": metric_type,
+                    "category": metric_type,  # Add missing category attribute
                 },
             )()
             return MetricCalculatorFactory.create_calculator(mock_definition)
