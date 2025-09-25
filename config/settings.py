@@ -320,10 +320,10 @@ else:
 # Service URLs for HTTP integration
 AUTH_SERVICE_URL = config("AUTH_SERVICE_URL", default="http://localhost:8001")
 MONITORING_SERVICE_URL = config(
-    "MONITORING_SERVICE_URL", default="http://localhost:8002"
+    "MONITORING_SERVICE_URL", default="http://localhost:8001"
 )
 MANAGEMENT_SERVICE_URL = config(
-    "MANAGEMENT_SERVICE_URL", default="http://localhost:8003"
+    "MANAGEMENT_SERVICE_URL", default="http://localhost:8002"
 )
 
 # JWT Configuration - use same SECRET_KEY as auth service
