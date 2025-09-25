@@ -272,7 +272,9 @@ class MonitoringServiceClient(BaseServiceClient):
             "end_date": self._format_datetime(end_date),
         }
 
-        result = self._make_request("GET", "/management/git-events/team/", params=params)
+        result = self._make_request(
+            "GET", "/management/git-events/team/", params=params
+        )
         # Handle both list and dict responses for test compatibility
         if isinstance(result, list):
             return result
