@@ -172,7 +172,7 @@ class MonitoringServiceClient(BaseServiceClient):
             "start_date": self._format_datetime(start_date),
             "end_date": self._format_datetime(end_date),
         }
-        result = self._make_request("GET", "/api/sessions/", params=params)
+        result = self._make_request("GET", "/monitoring/sessions/", params=params)
         # For test compatibility, return {'sessions': ...}
         if result and "sessions" in result:
             return result
@@ -242,7 +242,7 @@ class MonitoringServiceClient(BaseServiceClient):
             "end_date": self._format_datetime(end_date),
         }
 
-        result = self._make_request("GET", "/api/sessions/team/", params=params)
+        result = self._make_request("GET", "/api/teams/default/members", params=params)
         return result.get("results", []) if result else []
 
     def get_user_git_activity(
@@ -272,7 +272,7 @@ class MonitoringServiceClient(BaseServiceClient):
             "end_date": self._format_datetime(end_date),
         }
 
-        result = self._make_request("GET", "/api/git-events/team/", params=params)
+        result = self._make_request("GET", "/management/git-events/team/", params=params)
         # Handle both list and dict responses for test compatibility
         if isinstance(result, list):
             return result
@@ -298,7 +298,7 @@ class MonitoringServiceClient(BaseServiceClient):
         if end_date:
             params["end_date"] = self._format_datetime(end_date)
 
-        result = self._make_request("GET", "/api/code-metrics/", params=params)
+        result = self._make_request("GET", "/monitoring/code-metrics/", params=params)
         return result.get("results", []) if result else []
 
     def get_activity_logs(
