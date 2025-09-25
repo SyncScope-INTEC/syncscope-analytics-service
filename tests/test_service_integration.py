@@ -240,7 +240,7 @@ class TestMonitoringServiceClient:
         assert len(result["sessions"]) == 2
         mock_make_request.assert_called_once_with(
             "GET",
-            "/api/sessions/",
+            "/monitoring/sessions/",
             params={
                 "user_id": 123,
                 "start_date": start_date.isoformat(),
