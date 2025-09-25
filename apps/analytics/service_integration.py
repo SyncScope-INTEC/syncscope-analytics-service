@@ -260,25 +260,6 @@ class MonitoringServiceClient(BaseServiceClient):
         result = self._make_request("GET", "/api/git-events/", params=params)
         return result.get("results", []) if result else []
 
-    def get_team_git_activity(
-        self, team_id: str, start_date: datetime, end_date: datetime
-    ) -> List[Dict]:
-        """
-        Get team git activity from monitoring service
-        """
-        params = {
-            "team_id": team_id,
-            "start_date": self._format_datetime(start_date),
-            "end_date": self._format_datetime(end_date),
-        }
-
-        result = self._make_request(
-            "GET", "/management/git-events/team/", params=params
-        )
-        # Handle both list and dict responses for test compatibility
-        if isinstance(result, list):
-            return result
-        return result.get("results", []) if result else []
 
     def get_code_metrics(
         self,
@@ -338,6 +319,11 @@ class MonitoringServiceClient(BaseServiceClient):
 
 
 class ManagementServiceClient(BaseServiceClient):
+    def __init__(self):
+        super().__init__(
+            service_url=settings.MANAGEMENT_SERVICE_URL, service_name="management"
+        )
+
     @property
     def base_url(self):
         return self.service_url
@@ -473,12 +459,37 @@ class ManagementServiceClient(BaseServiceClient):
             "GET", f"/api/projects/{project_id}/github-integration/"
         )
 
+    def get_team_git_activity(
+        self, team_id: str, start_date: datetime, end_date: datetime
+    ) -> List[Dict]:
+        """
+        Get team git activity from management service
+        """
+        params = {
+            "team_id": team_id,
+            "start_date": self._format_datetime(start_date),
+            "end_date": self._format_datetime(end_date),
+        }
+
+        result = self._make_request(
+            "GET", "/management/git-events/team/", params=params
+        )
+        # Handle both list and dict responses for test compatibility
+        if isinstance(result, list):
+            return result
+        return result.get("results", []) if result else []
+
     def check_health(self) -> Dict[str, Any]:
         """Check management service health"""
         return self.get_health_status()
 
 
 class AuthServiceClient(BaseServiceClient):
+    def __init__(self):
+        super().__init__(
+            service_url=settings.AUTH_SERVICE_URL, service_name="auth"
+        )
+
     @property
     def base_url(self):
         return self.service_url

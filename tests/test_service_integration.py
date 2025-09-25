@@ -262,8 +262,8 @@ class TestMonitoringServiceClient:
 
         assert result == {"sessions": []}
 
-    @override_settings(MONITORING_SERVICE_URL="http://monitoring.test")
-    @patch.object(MonitoringServiceClient, "_make_request")
+    @override_settings(MANAGEMENT_SERVICE_URL="http://management.test")
+    @patch.object(ManagementServiceClient, "_make_request")
     def test_get_team_git_activity(self, mock_make_request):
         """Test get_team_git_activity method."""
         mock_make_request.return_value = [
@@ -271,7 +271,7 @@ class TestMonitoringServiceClient:
             {"commit_id": "def456", "lines_added": 30},
         ]
 
-        client = MonitoringServiceClient()
+        client = ManagementServiceClient()
         start_date = datetime(2024, 1, 1)
         end_date = datetime(2024, 1, 2)
 
