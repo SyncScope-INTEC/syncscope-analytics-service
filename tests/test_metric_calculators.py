@@ -358,6 +358,34 @@ class TestMetricCalculatorFactory:
 
         assert isinstance(calculator, CollaborationMetricCalculator)
 
+    @patch("apps.analytics.metric_calculators.ManagementServiceClient")
+    def test_team_collaboration_method(self, mock_management_client, metric_definition):
+        """Test team_collaboration calculation method."""
+        # Setup mock
+        mock_management = MagicMock()
+        mock_management_client.return_value = mock_management
+        mock_management.get_team_members.return_value = [
+            {"id": 1, "name": "User1"},
+            {"id": 2, "name": "User2"},
+        ]
+        mock_management.get_team_git_activity.return_value = [
+            {"event_type": "merge", "user_id": 1, "target_user_id": 2}
+        ]
+
+        # Setup metric definition for team_collaboration method
+        metric_definition.category = "collaboration"
+        metric_definition.calculation_method = "team_collaboration"
+
+        calculator = CollaborationMetricCalculator(metric_definition)
+        context = {"team_id": "test-team"}
+
+        result = calculator.calculate(context)
+
+        assert "value" in result
+        assert "error" not in result
+        mock_management.get_team_members.assert_called_once()
+        mock_management.get_team_git_activity.assert_called_once()
+
     def test_create_performance_calculator(self, metric_definition):
         """Test creating performance calculator."""
         metric_definition.category = "performance"

@@ -358,6 +358,9 @@ class CollaborationMetricCalculator(BaseMetricCalculator):
 
             if method == "collaboration_score":
                 return self._calculate_collaboration_score(team_members, git_events)
+            elif method == "team_collaboration":
+                # Use collaboration_score as default for team_collaboration
+                return self._calculate_collaboration_score(team_members, git_events)
             elif method == "code_review_participation":
                 return self._calculate_review_participation(git_events)
             elif method == "knowledge_sharing_index":
