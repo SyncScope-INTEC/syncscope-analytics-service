@@ -49,7 +49,7 @@ class BaseServiceClient:
         """
         try:
             url = f"{self.service_url}{endpoint}"
-            headers = get_auth_headers()
+            headers = get_auth_headers(self.service_name)
 
             # Check cache first for GET requests
             cache_key = None

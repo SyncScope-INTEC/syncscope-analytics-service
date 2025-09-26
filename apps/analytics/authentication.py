@@ -235,11 +235,24 @@ class UserPermissions:
         return user.is_admin()
 
 
-def get_auth_headers():
+def get_auth_headers(service_name=None):
     """
     Get authentication headers for outgoing requests to other services
+    Different services use different authentication methods:
+    - Monitoring service: Uses X-Service-Token header
+    - Management service: Uses Authorization Bearer token with auth service validation
+    - Auth service: Uses Authorization Bearer token
     """
     service_token = ServiceAuthentication.create_service_token()
+
+    # Monitoring service uses X-Service-Token header
+    if service_name == "monitoring":
+        return {
+            "X-Service-Token": service_token,
+            "Content-Type": "application/json",
+        }
+
+    # Other services (management, auth) use standard Authorization header
     return {
         "Authorization": f"Bearer {service_token}",
         "Content-Type": "application/json",
