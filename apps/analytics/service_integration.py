@@ -260,7 +260,6 @@ class MonitoringServiceClient(BaseServiceClient):
         result = self._make_request("GET", "/api/git-events/", params=params)
         return result.get("results", []) if result else []
 
-
     def get_code_metrics(
         self,
         user_id: Optional[str] = None,
@@ -486,9 +485,7 @@ class ManagementServiceClient(BaseServiceClient):
 
 class AuthServiceClient(BaseServiceClient):
     def __init__(self):
-        super().__init__(
-            service_url=settings.AUTH_SERVICE_URL, service_name="auth"
-        )
+        super().__init__(service_url=settings.AUTH_SERVICE_URL, service_name="auth")
 
     @property
     def base_url(self):
@@ -730,7 +727,7 @@ class ServiceIntegrationManager:
             "sessions": self.monitoring.get_team_sessions(
                 team_id, start_date, end_date
             ),
-            "git_activity": self.monitoring.get_team_git_activity(
+            "git_activity": self.management.get_team_git_activity(
                 team_id, start_date, end_date
             ),
         }

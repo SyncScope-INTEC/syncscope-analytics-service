@@ -97,7 +97,9 @@ class ProductivityMetricCalculator(BaseMetricCalculator):
                 sessions_data = monitoring_client.get_team_sessions(
                     team_id, start_date, end_date
                 )
-                commits_data = monitoring_client.get_team_git_activity(
+                # Get team git activity from management service
+                management_client = ManagementServiceClient()
+                commits_data = management_client.get_team_git_activity(
                     team_id, start_date, end_date
                 )
 
@@ -348,7 +350,7 @@ class CollaborationMetricCalculator(BaseMetricCalculator):
             monitoring_client = MonitoringServiceClient()
 
             team_members = management_client.get_team_members(team_id)
-            git_events = monitoring_client.get_team_git_activity(
+            git_events = management_client.get_team_git_activity(
                 team_id, start_date, end_date
             )
 

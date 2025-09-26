@@ -123,14 +123,20 @@ class TestProductivityMetricCalculator:
         assert result["unit"] == "minutes"
         mock_client.get_user_sessions.assert_called_once()
 
+    @patch("apps.analytics.metric_calculators.ManagementServiceClient")
     @patch("apps.analytics.metric_calculators.MonitoringServiceClient")
-    def test_calculate_with_team_id(self, mock_monitoring_client, metric_definition):
+    def test_calculate_with_team_id(
+        self, mock_monitoring_client, mock_management_client, metric_definition
+    ):
         """Test calculation with team_id context."""
-        # Setup mock
-        mock_client = MagicMock()
-        mock_monitoring_client.return_value = mock_client
-        mock_client.get_team_sessions.return_value = []
-        mock_client.get_team_git_activity.return_value = []
+        # Setup mock clients
+        mock_monitoring = MagicMock()
+        mock_management = MagicMock()
+        mock_monitoring_client.return_value = mock_monitoring
+        mock_management_client.return_value = mock_management
+
+        mock_monitoring.get_team_sessions.return_value = []
+        mock_management.get_team_git_activity.return_value = []
 
         # Setup metric definition
         metric_definition.calculation_method = "avg_session_duration"
@@ -140,7 +146,7 @@ class TestProductivityMetricCalculator:
 
         result = calculator.calculate(context)
 
-        mock_client.get_team_sessions.assert_called_once()
+        mock_monitoring.get_team_sessions.assert_called_once()
 
     def test_calculate_no_user_or_team(self, metric_definition):
         """Test calculation with no user_id or team_id."""
