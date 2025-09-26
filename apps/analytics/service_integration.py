@@ -350,13 +350,13 @@ class ManagementServiceClient(BaseServiceClient):
             return []
 
     def get_user_commits(self, user_id: str, start_date: Any, end_date: Any) -> dict:
-        """Get user commits from management service"""
+        """Get user commits from management service analytics endpoint"""
         params = {
             "user_id": user_id,
             "start_date": self._format_datetime(start_date),
             "end_date": self._format_datetime(end_date),
         }
-        result = self._make_request("GET", "/management/commits/", params=params)
+        result = self._make_request("GET", "/management/user-commits/analytics/", params=params)
         if result and "commits" in result:
             return result
         elif result and "results" in result:
