@@ -324,7 +324,9 @@ else:
     }
 
 # Service URLs for HTTP integration
-AUTH_SERVICE_URL = config("AUTH_SERVICE_URL", default="https://syncscope-auth-service-dev.up.railway.app")
+AUTH_SERVICE_URL = config(
+    "AUTH_SERVICE_URL", default="https://syncscope-auth-service-dev.up.railway.app"
+)
 MONITORING_SERVICE_URL = config(
     "MONITORING_SERVICE_URL", default="http://localhost:8001"
 )
