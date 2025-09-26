@@ -87,15 +87,23 @@ class ProductivityMetricCalculator(BaseMetricCalculator):
             monitoring_client = MonitoringServiceClient()
 
             if user_id:
-                sessions_data = monitoring_client.get_user_sessions(
+                sessions_response = monitoring_client.get_user_sessions(
                     user_id, start_date, end_date
                 )
                 commits_data = []  # Productivity focuses on session data, not commits
             else:
-                sessions_data = monitoring_client.get_team_sessions(
+                sessions_response = monitoring_client.get_team_sessions(
                     team_id, start_date, end_date
                 )
                 commits_data = []  # Productivity focuses on session data, not commits
+
+            # Extract sessions list from response
+            if isinstance(sessions_response, dict) and "sessions" in sessions_response:
+                sessions_data = sessions_response["sessions"]
+            elif isinstance(sessions_response, list):
+                sessions_data = sessions_response
+            else:
+                sessions_data = []
 
             # Calculate metrics based on calculation method
             method = self.metric_definition.calculation_method
