@@ -90,7 +90,9 @@ class ProductivityMetricCalculator(BaseMetricCalculator):
                 sessions_data = monitoring_client.get_user_sessions(
                     user_id, start_date, end_date
                 )
-                commits_data = monitoring_client.get_user_git_activity(
+                # Get user git activity from management service
+                management_client = ManagementServiceClient()
+                commits_data = management_client.get_user_commits(
                     user_id, start_date, end_date
                 )
             else:
@@ -107,6 +109,9 @@ class ProductivityMetricCalculator(BaseMetricCalculator):
             method = self.metric_definition.calculation_method
 
             if method == "avg_session_duration":
+                return self._calculate_avg_session_duration(sessions_data)
+            elif method == "productivity":
+                # Use avg_session_duration as default for productivity
                 return self._calculate_avg_session_duration(sessions_data)
             elif method == "commits_per_day":
                 return self._calculate_commits_per_day(commits_data)
@@ -260,6 +265,9 @@ class CodeQualityMetricCalculator(BaseMetricCalculator):
             method = self.metric_definition.calculation_method
 
             if method == "complexity_score":
+                return self._calculate_complexity_score(code_metrics)
+            elif method == "code_quality":
+                # Use complexity_score as default for code_quality
                 return self._calculate_complexity_score(code_metrics)
             elif method == "test_coverage":
                 return self._calculate_test_coverage(code_metrics)

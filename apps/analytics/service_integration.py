@@ -192,7 +192,9 @@ class MonitoringServiceClient(BaseServiceClient):
             "start_date": self._format_datetime(start_date),
             "end_date": self._format_datetime(end_date),
         }
-        result = self._make_request("GET", "/api/project-activity/", params=params)
+        # TODO: Monitoring service doesn't have project-activity endpoint yet
+        # result = self._make_request("GET", "/monitoring/project-activity/", params=params)
+        result = None
         # For test compatibility, return dict with 'activity' and 'summary'
         if result and "activity" in result:
             return result
@@ -208,7 +210,9 @@ class MonitoringServiceClient(BaseServiceClient):
             "start_date": self._format_datetime(start_date),
             "end_date": self._format_datetime(end_date),
         }
-        result = self._make_request("GET", "/api/team-metrics/", params=params)
+        # TODO: Monitoring service doesn't have team-metrics endpoint yet
+        # result = self._make_request("GET", "/monitoring/team-metrics/", params=params)
+        result = None
         # For test compatibility, return dict with 'team_metrics' and 'user_metrics'
         if result and "team_metrics" in result:
             return result
@@ -242,7 +246,9 @@ class MonitoringServiceClient(BaseServiceClient):
             "end_date": self._format_datetime(end_date),
         }
 
-        result = self._make_request("GET", "/api/teams/default/members", params=params)
+        # TODO: Monitoring service doesn't have teams endpoint yet
+        # result = self._make_request("GET", "/monitoring/teams/default/members", params=params)
+        result = None
         return result.get("results", []) if result else []
 
     def get_user_git_activity(
@@ -257,7 +263,7 @@ class MonitoringServiceClient(BaseServiceClient):
             "end_date": self._format_datetime(end_date),
         }
 
-        result = self._make_request("GET", "/api/git-events/", params=params)
+        result = self._make_request("GET", "/monitoring/events/git/", params=params)
         return result.get("results", []) if result else []
 
     def get_code_metrics(
@@ -303,18 +309,22 @@ class MonitoringServiceClient(BaseServiceClient):
         if end_date:
             params["end_date"] = self._format_datetime(end_date)
 
-        result = self._make_request("GET", "/api/activity-logs/", params=params)
-        return result.get("results", []) if result else []
+        # TODO: Monitoring service doesn't have activity logs endpoint yet
+        # result = self._make_request("GET", "/monitoring/activity-logs/", params=params)
+        # return result.get("results", []) if result else []
+        return []  # Return empty list for now
 
     def get_user_summary(self, user_id: str, period: str = "30d") -> Dict[str, Any]:
         """
         Get user activity summary from monitoring service
         """
         params = {"period": period}
-        result = self._make_request(
-            "GET", f"/api/users/{user_id}/summary/", params=params
-        )
-        return result or {}
+        # TODO: Monitoring service doesn't have user summary endpoint yet
+        # result = self._make_request(
+        #     "GET", f"/monitoring/users/{user_id}/summary/", params=params
+        # )
+        # return result or {}
+        return {}  # Return empty dict for now
 
 
 class ManagementServiceClient(BaseServiceClient):

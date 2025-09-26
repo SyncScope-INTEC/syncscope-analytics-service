@@ -98,17 +98,23 @@ class TestProductivityMetricCalculator:
         assert isinstance(calculator, BaseMetricCalculator)
         assert calculator.metric_definition == metric_definition
 
+    @patch("apps.analytics.metric_calculators.ManagementServiceClient")
     @patch("apps.analytics.metric_calculators.MonitoringServiceClient")
-    def test_calculate_with_user_id(self, mock_monitoring_client, metric_definition):
+    def test_calculate_with_user_id(
+        self, mock_monitoring_client, mock_management_client, metric_definition
+    ):
         """Test calculation with user_id context."""
-        # Setup mock
-        mock_client = MagicMock()
-        mock_monitoring_client.return_value = mock_client
-        mock_client.get_user_sessions.return_value = [
+        # Setup mock clients
+        mock_monitoring = MagicMock()
+        mock_management = MagicMock()
+        mock_monitoring_client.return_value = mock_monitoring
+        mock_management_client.return_value = mock_management
+
+        mock_monitoring.get_user_sessions.return_value = [
             {"session_duration_minutes": 120},
             {"session_duration_minutes": 90},
         ]
-        mock_client.get_user_git_activity.return_value = []
+        mock_management.get_user_commits.return_value = {"commits": []}
 
         # Setup metric definition
         metric_definition.calculation_method = "avg_session_duration"
@@ -121,7 +127,7 @@ class TestProductivityMetricCalculator:
         assert "value" in result
         assert "unit" in result
         assert result["unit"] == "minutes"
-        mock_client.get_user_sessions.assert_called_once()
+        mock_monitoring.get_user_sessions.assert_called_once()
 
     @patch("apps.analytics.metric_calculators.ManagementServiceClient")
     @patch("apps.analytics.metric_calculators.MonitoringServiceClient")
@@ -318,8 +324,14 @@ class TestProductivityMetricCalculator:
             assert "error" in result
             mock_logger.error.assert_called_once()
 
-    def test_calculate_unknown_method(self, metric_definition):
+    @patch("apps.analytics.metric_calculators.ManagementServiceClient")
+    def test_calculate_unknown_method(self, mock_management_client, metric_definition):
         """Test calculation with unknown method."""
+        # Mock management client
+        mock_management = MagicMock()
+        mock_management_client.return_value = mock_management
+        mock_management.get_user_commits.return_value = {"commits": []}
+
         metric_definition.calculation_method = "unknown_method"
         calculator = ProductivityMetricCalculator(metric_definition)
 
