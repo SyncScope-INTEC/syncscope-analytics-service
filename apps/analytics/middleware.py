@@ -27,15 +27,15 @@ class SecurityHeadersMiddleware:
 
         # HSTS for HTTPS
         if request.is_secure():
-            response[
-                "Strict-Transport-Security"
-            ] = "max-age=31536000; includeSubDomains"
+            response["Strict-Transport-Security"] = (
+                "max-age=31536000; includeSubDomains"
+            )
 
         # CSP for API responses
         if request.path.startswith("/analytics/"):
-            response[
-                "Content-Security-Policy"
-            ] = "default-src 'none'; script-src 'none'; object-src 'none'"
+            response["Content-Security-Policy"] = (
+                "default-src 'none'; script-src 'none'; object-src 'none'"
+            )
 
         return response
 
