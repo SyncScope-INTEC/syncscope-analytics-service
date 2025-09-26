@@ -521,18 +521,23 @@ class TestIntegrationScenarios:
     """Integration tests for metric calculators."""
 
     @patch("apps.analytics.metric_calculators.MonitoringServiceClient")
+    @patch("apps.analytics.metric_calculators.ManagementServiceClient")
     def test_end_to_end_productivity_calculation(
-        self, mock_monitoring_client, metric_definition
+        self, mock_management_client, mock_monitoring_client, metric_definition
     ):
         """Test end-to-end productivity metric calculation."""
-        # Setup mock data
-        mock_client = MagicMock()
-        mock_monitoring_client.return_value = mock_client
-        mock_client.get_user_sessions.return_value = [
+        # Setup mock monitoring client
+        mock_monitoring = MagicMock()
+        mock_monitoring_client.return_value = mock_monitoring
+        mock_monitoring.get_user_sessions.return_value = [
             {"session_duration_minutes": 120, "active_time_percentage": 85},
             {"session_duration_minutes": 90, "active_time_percentage": 90},
         ]
-        mock_client.get_user_git_activity.return_value = [
+
+        # Setup mock management client
+        mock_management = MagicMock()
+        mock_management_client.return_value = mock_management
+        mock_management.get_user_git_activity.return_value = [
             {"timestamp": "2024-01-01T10:00:00Z", "insertions": 50, "deletions": 10},
             {"timestamp": "2024-01-02T09:00:00Z", "insertions": 30, "deletions": 5},
         ]
