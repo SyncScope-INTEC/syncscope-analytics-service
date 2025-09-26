@@ -90,20 +90,12 @@ class ProductivityMetricCalculator(BaseMetricCalculator):
                 sessions_data = monitoring_client.get_user_sessions(
                     user_id, start_date, end_date
                 )
-                # Get user git activity from management service
-                management_client = ManagementServiceClient()
-                commits_data = management_client.get_user_commits(
-                    user_id, start_date, end_date
-                )
+                commits_data = []  # Productivity focuses on session data, not commits
             else:
                 sessions_data = monitoring_client.get_team_sessions(
                     team_id, start_date, end_date
                 )
-                # Get team git activity from management service
-                management_client = ManagementServiceClient()
-                commits_data = management_client.get_team_git_activity(
-                    team_id, start_date, end_date
-                )
+                commits_data = []  # Productivity focuses on session data, not commits
 
             # Calculate metrics based on calculation method
             method = self.metric_definition.calculation_method
