@@ -154,6 +154,12 @@ if not USE_SQLITE:
         }  # Don't persist connections in serverless
     )
 
+# Authentication backends for admin integration with auth service API
+AUTHENTICATION_BACKENDS = [
+    "apps.analytics.database_auth_backend.CachedAuthServiceAPIBackend",
+    "django.contrib.auth.backends.ModelBackend",  # Fallback for local users
+]
+
 # Password validation
 AUTH_PASSWORD_VALIDATORS = [
     {
@@ -318,7 +324,7 @@ else:
     }
 
 # Service URLs for HTTP integration
-AUTH_SERVICE_URL = config("AUTH_SERVICE_URL", default="http://localhost:8001")
+AUTH_SERVICE_URL = config("AUTH_SERVICE_URL", default="https://syncscope-auth-service-dev.up.railway.app")
 MONITORING_SERVICE_URL = config(
     "MONITORING_SERVICE_URL", default="http://localhost:8001"
 )
