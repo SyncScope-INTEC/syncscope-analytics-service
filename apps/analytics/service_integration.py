@@ -356,7 +356,9 @@ class ManagementServiceClient(BaseServiceClient):
             "start_date": self._format_datetime(start_date),
             "end_date": self._format_datetime(end_date),
         }
-        result = self._make_request("GET", "/management/user-commits/analytics/", params=params)
+        result = self._make_request(
+            "GET", "/management/user-commits/analytics/", params=params
+        )
         if result and "commits" in result:
             return result
         elif result and "results" in result:
