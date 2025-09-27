@@ -31,7 +31,7 @@ class User(AbstractBaseUser):
     REQUIRED_FIELDS = []
 
     class Meta:
-        db_table = "auth.users"  # Reference existing auth.users table
+        db_table = "users"  # Reference auth.users table via search path
         managed = False  # Don't let Django manage this table
 
     def has_perm(self, perm, obj=None):
