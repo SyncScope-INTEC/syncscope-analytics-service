@@ -5,11 +5,12 @@ API-based authentication backend that uses the SyncScope Auth Service.
 import logging
 import time
 
-import requests
 from django.conf import settings
 from django.contrib.auth.backends import BaseBackend
 from django.contrib.auth.models import User
 from django.core.cache import cache
+
+import requests
 
 logger = logging.getLogger(__name__)
 
