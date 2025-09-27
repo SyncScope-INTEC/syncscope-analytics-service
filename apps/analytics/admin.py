@@ -86,7 +86,9 @@ def safe_get_app_list(self, request):
         if perms.get("change") or perms.get("view"):
             model_dict["view_only"] = not perms.get("change")
             try:
-                model_dict["admin_url"] = admin.site.reverse("admin:%s_%s_changelist" % info)
+                model_dict["admin_url"] = admin.site.reverse(
+                    "admin:%s_%s_changelist" % info
+                )
             except:
                 pass
         if perms.get("add"):
@@ -101,7 +103,9 @@ def safe_get_app_list(self, request):
             app_dict[app_label] = {
                 "name": app_label.title(),
                 "app_label": app_label,
-                "app_url": admin.site.reverse("admin:app_list", kwargs={"app_label": app_label}),
+                "app_url": admin.site.reverse(
+                    "admin:app_list", kwargs={"app_label": app_label}
+                ),
                 "has_module_perms": has_module_perms,
                 "models": [model_dict],
             }
