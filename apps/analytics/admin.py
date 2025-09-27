@@ -88,7 +88,7 @@ class ReportAdmin(admin.ModelAdmin):
         ("Scope", {"fields": ("created_by", "company_id", "team_id", "project_id")}),
         (
             "Content",
-            {"fields": ("parameters", "generated_data", "file_path", "file_size")},
+            {"fields": ("config", "data", "file_path", "file_size")},
         ),
         (
             "Schedule",
@@ -128,7 +128,7 @@ class AnalyticsCacheAdmin(admin.ModelAdmin):
     list_display = [
         "cache_key",
         "cache_type",
-        "source_metric",
+        "source_metric_id",
         "expires_at",
         "last_accessed",
         "hit_count",
@@ -140,13 +140,13 @@ class AnalyticsCacheAdmin(admin.ModelAdmin):
         "created_at",
         "last_accessed",
     ]
-    search_fields = ["cache_key", "source_metric"]
+    search_fields = ["cache_key"]
     readonly_fields = ["id", "created_at", "updated_at", "last_accessed", "hit_count"]
     ordering = ["-created_at"]
 
     fieldsets = (
-        (None, {"fields": ("id", "cache_key", "cache_type", "source_metric")}),
-        ("Data", {"fields": ("cached_data", "metadata")}),
+        (None, {"fields": ("id", "cache_key", "cache_type", "source_metric_id")}),
+        ("Data", {"fields": ("data", "metadata")}),
         ("Statistics", {"fields": ("hit_count", "last_accessed", "expires_at")}),
         (
             "Timestamps",
@@ -164,9 +164,9 @@ class AlertRuleAdmin(admin.ModelAdmin):
 
     list_display = [
         "name",
-        "metric",
+        "metric_definition",
         "condition",
-        "threshold",
+        "threshold_value",
         "severity",
         "is_active",
         "created_at",
@@ -177,14 +177,14 @@ class AlertRuleAdmin(admin.ModelAdmin):
         "is_active",
         "created_at",
     ]
-    search_fields = ["name", "description"]
+    search_fields = ["name"]
     readonly_fields = ["id", "created_at", "updated_at"]
     ordering = ["severity", "name"]
 
     fieldsets = (
-        (None, {"fields": ("id", "name", "description", "metric")}),
-        ("Alert Conditions", {"fields": ("condition", "threshold", "severity")}),
-        ("Configuration", {"fields": ("notification_channels", "is_active")}),
+        (None, {"fields": ("id", "name", "metric_definition")}),
+        ("Alert Conditions", {"fields": ("condition", "threshold_value", "severity")}),
+        ("Configuration", {"fields": ("notification_config", "is_active", "cooldown_minutes")}),
         (
             "Timestamps",
             {"fields": ("created_at", "updated_at"), "classes": ("collapse",)},
@@ -229,37 +229,37 @@ class MetricSnapshotAdmin(admin.ModelAdmin):
     """Admin interface for MetricSnapshot model."""
 
     list_display = [
-        "metric",
+        "metric_definition",
         "user_id",
         "project_id",
         "team_id",
         "period_start",
         "period_end",
         "value",
-        "calculated_at",
+        "snapshot_time",
     ]
     list_filter = [
-        "calculated_at",
+        "snapshot_time",
         "period_start",
         "period_end",
     ]
-    search_fields = ["metric__name"]
-    readonly_fields = ["id", "calculated_at"]
-    ordering = ["-calculated_at"]
+    search_fields = ["metric_definition__name"]
+    readonly_fields = ["id", "created_at"]
+    ordering = ["-snapshot_time"]
 
     fieldsets = (
-        (None, {"fields": ("id", "metric", "calculated_at")}),
+        (None, {"fields": ("id", "metric_definition", "snapshot_time")}),
         ("Scope", {"fields": ("user_id", "project_id", "team_id")}),
         ("Period", {"fields": ("period_start", "period_end")}),
-        ("Result", {"fields": ("value", "unit", "metadata", "data_points")}),
+        ("Result", {"fields": ("value", "raw_data_count", "calculation_metadata", "confidence_score")}),
     )
 
     def get_queryset(self, request):
         return (
             super()
             .get_queryset(request)
-            .select_related("metric")
-            .order_by("-calculated_at")
+            .select_related("metric_definition")
+            .order_by("-snapshot_time")
         )
 
 
