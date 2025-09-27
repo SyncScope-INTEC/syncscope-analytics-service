@@ -316,7 +316,7 @@ class TimeSeriesDataAdmin(admin.ModelAdmin):
         "project_id",
         "team_id",
         "timestamp",
-        "value",
+        "get_value_display",
     ]
     list_filter = [
         "measurement",
@@ -330,8 +330,14 @@ class TimeSeriesDataAdmin(admin.ModelAdmin):
     fieldsets = (
         (None, {"fields": ("id", "measurement", "source", "timestamp")}),
         ("Scope", {"fields": ("user_id", "project_id", "team_id")}),
-        ("Data", {"fields": ("value", "tags", "metadata")}),
+        ("Data", {"fields": ("value_float", "value_int", "value_string", "value_bool", "tags", "fields")}),
     )
+
+    def get_value_display(self, obj):
+        """Display the value using the model's value property."""
+        return obj.value
+
+    get_value_display.short_description = "Value"
 
     def get_queryset(self, request):
         return super().get_queryset(request).order_by("-timestamp")
