@@ -157,7 +157,7 @@ if not USE_SQLITE:
 # Authentication backends for admin integration with auth service API
 AUTHENTICATION_BACKENDS = [
     "apps.analytics.database_auth_backend.CachedAuthServiceAPIBackend",
-    "django.contrib.auth.backends.ModelBackend",  # Fallback for local users
+    # Removed ModelBackend to prevent auth_user table queries
 ]
 
 # Password validation
