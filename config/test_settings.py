@@ -7,11 +7,19 @@ from .settings import *
 # Override settings for testing
 DEBUG = True
 
-# Use in-memory SQLite for faster tests
+# Use Django's default User model for SQLite tests (no schema support)
+AUTH_USER_MODEL = "auth.User"
+
+# Use default ModelBackend for testing
+AUTHENTICATION_BACKENDS = [
+    "django.contrib.auth.backends.ModelBackend",
+]
+
+# Use test SQLite database
 DATABASES = {
     "default": {
         "ENGINE": "django.db.backends.sqlite3",
-        "NAME": ":memory:",
+        "NAME": "test_db.sqlite3",
         "TEST": {
             "SERIALIZE": False,  # Disable serialization to avoid table errors
         },
@@ -83,14 +91,17 @@ class DisableMigrations:
         return None
 
 
-# Only disable migrations if we're not in CI (to ensure tables are created properly in CI)
+# Always disable migrations for faster tests and use syncdb instead
 import os
 
-if not os.environ.get("GITHUB_ACTIONS"):
+# For CI environments, use in-memory database
+if os.environ.get("GITHUB_ACTIONS"):
+    DATABASES["default"]["NAME"] = ":memory:"
+    # Disable migrations to avoid User model conflicts in CI
     MIGRATION_MODULES = DisableMigrations()
 else:
-    # In CI, we still want to use SQLite in-memory but with proper migrations
-    DATABASES["default"]["NAME"] = ":memory:"
+    # For local testing, disable migrations too
+    MIGRATION_MODULES = DisableMigrations()
 
 # Additional test database settings
 DATABASES["default"]["OPTIONS"] = {
