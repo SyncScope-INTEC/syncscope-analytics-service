@@ -2,7 +2,6 @@ import sys
 import uuid
 from decimal import Decimal
 
-from django.contrib.auth.models import AbstractUser
 from django.db import models
 from django.utils import timezone
 
@@ -710,28 +709,3 @@ class MetricSnapshot(RetryableModelMixin, models.Model):
 
     def __str__(self):
         return f"{self.metric_definition.name} - {self.snapshot_time} - {self.value}"
-
-
-class User(AbstractUser):
-    """
-    User model that references the auth.users table from the auth service.
-    This ensures django_admin_log and other Django components reference the correct user table.
-    """
-
-    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
-    email = models.EmailField(unique=True)
-    first_name = models.CharField(max_length=100, null=True, blank=True)
-    last_name = models.CharField(max_length=100, null=True, blank=True)
-
-    # Remove username field to match auth service
-    username = None
-    USERNAME_FIELD = "email"
-    REQUIRED_FIELDS = ["first_name", "last_name"]
-
-    class Meta:
-        # Reference the auth.users table from the auth service
-        db_table = "auth.users"
-        managed = False  # Don't let Django manage this table since it's managed by auth service
-
-    def __str__(self):
-        return f"{self.first_name} {self.last_name} ({self.email})"
