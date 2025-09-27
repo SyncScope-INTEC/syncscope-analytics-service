@@ -7,13 +7,14 @@ import time
 import uuid
 
 from django.conf import settings
+from django.contrib.auth import get_user_model
 from django.contrib.auth.backends import BaseBackend
-
-# Don't import Django's default User model - we'll work directly with the database
 from django.core.cache import cache
 from django.db import connection
 
 import requests
+
+User = get_user_model()
 
 logger = logging.getLogger(__name__)
 
@@ -24,6 +25,16 @@ class SimplePKField:
     def value_to_string(self, user):
         """Convert user ID to string for session storage"""
         return str(user.id)
+
+    def to_python(self, value):
+        """Convert string back to UUID for session retrieval"""
+        if value is None:
+            return value
+        # If it's already a UUID, return as string
+        if isinstance(value, uuid.UUID):
+            return str(value)
+        # If it's a string representation of UUID, return as-is
+        return str(value)
 
 
 class SimpleMeta:
@@ -196,7 +207,10 @@ class AuthServiceAPIBackend(BaseBackend):
         """
         Get user by ID for session management.
         """
-        return SimpleUser.get_user_by_id(user_id)
+        try:
+            return User.objects.get(pk=user_id)
+        except User.DoesNotExist:
+            return None
 
     def _authenticate_with_service(self, email, password, max_retries=3):
         """
@@ -246,33 +260,53 @@ class AuthServiceAPIBackend(BaseBackend):
 
     def _get_or_create_local_user(self, user_data):
         """
-        Create or update a local Django user for admin interface.
-        Maps auth service UUID to local user for admin log compatibility.
+        Get or create a Django user from auth service data.
+        Maps auth service UUID to Django User for admin compatibility.
         """
         try:
             email = user_data["email"]
             auth_service_uuid = user_data.get("id")  # UUID from auth service
             role = user_data.get("role", "developer")
 
-            # Create SimpleUser object directly from auth service data
-            user = SimpleUser(
-                id=auth_service_uuid,  # Use the UUID from auth service
-                email=email,
-                first_name=user_data.get("first_name", ""),
-                last_name=user_data.get("last_name", ""),
-                is_staff=user_data.get("is_staff", False)
-                or role in ["admin", "supervisor"],
-                is_active=user_data.get("is_active", True),
-                is_superuser=user_data.get("is_superuser", False) or role == "admin",
-                last_login=None,
-            )
+            # Try to get existing user first
+            try:
+                user = User.objects.get(pk=auth_service_uuid)
+                # Update user data
+                user.email = email
+                user.first_name = user_data.get("first_name", "")
+                user.last_name = user_data.get("last_name", "")
+                user.is_staff = user_data.get("is_staff", False) or role in [
+                    "admin",
+                    "supervisor",
+                ]
+                user.is_active = user_data.get("is_active", True)
+                user.is_superuser = (
+                    user_data.get("is_superuser", False) or role == "admin"
+                )
+                # Note: Don't save since this is managed=False
+                logger.info(f"AuthServiceAPIBackend: Found existing user: {user.email}")
+                return user
+            except User.DoesNotExist:
+                # Create new user object (but don't save to DB since managed=False)
+                user = User(
+                    id=auth_service_uuid,  # Use the UUID from auth service
+                    email=email,
+                    first_name=user_data.get("first_name", ""),
+                    last_name=user_data.get("last_name", ""),
+                    is_staff=user_data.get("is_staff", False)
+                    or role in ["admin", "supervisor"],
+                    is_active=user_data.get("is_active", True),
+                    is_superuser=user_data.get("is_superuser", False)
+                    or role == "admin",
+                    last_login=None,
+                )
 
-            # Log successful user creation
-            logger.info(
-                f"AuthServiceAPIBackend: Created SimpleUser for: {user.email} with UUID: {auth_service_uuid}"
-            )
+                # Log successful user creation
+                logger.info(
+                    f"AuthServiceAPIBackend: Created Django User for: {user.email} with UUID: {auth_service_uuid}"
+                )
 
-            return user
+                return user
 
         except Exception as e:
             logger.error(

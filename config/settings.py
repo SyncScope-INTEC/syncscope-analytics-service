@@ -154,6 +154,9 @@ if not USE_SQLITE:
         }  # Don't persist connections in serverless
     )
 
+# Custom User model for UUID compatibility
+AUTH_USER_MODEL = "analytics.User"
+
 # Authentication backends for admin integration with auth service API
 AUTHENTICATION_BACKENDS = [
     "apps.analytics.database_auth_backend.CachedAuthServiceAPIBackend",
