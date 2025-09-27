@@ -330,7 +330,19 @@ class TimeSeriesDataAdmin(admin.ModelAdmin):
     fieldsets = (
         (None, {"fields": ("id", "measurement", "source", "timestamp")}),
         ("Scope", {"fields": ("user_id", "project_id", "team_id")}),
-        ("Data", {"fields": ("value_float", "value_int", "value_string", "value_bool", "tags", "fields")}),
+        (
+            "Data",
+            {
+                "fields": (
+                    "value_float",
+                    "value_int",
+                    "value_string",
+                    "value_bool",
+                    "tags",
+                    "fields",
+                )
+            },
+        ),
     )
 
     def get_value_display(self, obj):
