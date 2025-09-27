@@ -3,17 +3,17 @@ Django admin configuration for Analytics Service models.
 """
 
 from django.contrib import admin
-from django.utils.html import format_html
 from django.urls import reverse
+from django.utils.html import format_html
 from django.utils.safestring import mark_safe
 
 from .models import (
-    MetricDefinition,
-    Report,
-    AnalyticsCache,
     AlertRule,
-    TimeSeriesData,
+    AnalyticsCache,
+    MetricDefinition,
     MetricSnapshot,
+    Report,
+    TimeSeriesData,
 )
 
 
@@ -43,19 +43,16 @@ class MetricDefinitionAdmin(admin.ModelAdmin):
     ordering = ["category", "name"]
 
     fieldsets = (
-        (None, {
-            "fields": ("id", "name", "description", "category")
-        }),
-        ("Calculation Settings", {
-            "fields": ("calculation_method", "parameters", "unit", "cache_duration")
-        }),
-        ("Configuration", {
-            "fields": ("data_sources", "is_active", "requires_ml")
-        }),
-        ("Timestamps", {
-            "fields": ("created_at", "updated_at"),
-            "classes": ("collapse",)
-        }),
+        (None, {"fields": ("id", "name", "description", "category")}),
+        (
+            "Calculation Settings",
+            {"fields": ("calculation_method", "parameters", "unit", "cache_duration")},
+        ),
+        ("Configuration", {"fields": ("data_sources", "is_active", "requires_ml")}),
+        (
+            "Timestamps",
+            {"fields": ("created_at", "updated_at"), "classes": ("collapse",)},
+        ),
     )
 
     def get_queryset(self, request):
@@ -87,37 +84,40 @@ class ReportAdmin(admin.ModelAdmin):
     ordering = ["-created_at"]
 
     fieldsets = (
-        (None, {
-            "fields": ("id", "name", "description", "type", "status")
-        }),
-        ("Scope", {
-            "fields": ("created_by", "company_id", "team_id", "project_id")
-        }),
-        ("Content", {
-            "fields": ("parameters", "generated_data", "file_path", "file_size")
-        }),
-        ("Schedule", {
-            "fields": ("created_at", "expires_at", "updated_at"),
-            "classes": ("collapse",)
-        }),
+        (None, {"fields": ("id", "name", "description", "type", "status")}),
+        ("Scope", {"fields": ("created_by", "company_id", "team_id", "project_id")}),
+        (
+            "Content",
+            {"fields": ("parameters", "generated_data", "file_path", "file_size")},
+        ),
+        (
+            "Schedule",
+            {
+                "fields": ("created_at", "expires_at", "updated_at"),
+                "classes": ("collapse",),
+            },
+        ),
     )
 
     def created_by_info(self, obj):
         if obj.created_by:
             return f"User {obj.created_by}"
         return "System"
+
     created_by_info.short_description = "Created By"
 
     def team_info(self, obj):
         if obj.team_id:
             return f"Team {obj.team_id}"
         return "-"
+
     team_info.short_description = "Team"
 
     def project_info(self, obj):
         if obj.project_id:
             return f"Project {obj.project_id}"
         return "-"
+
     project_info.short_description = "Project"
 
 
@@ -145,19 +145,13 @@ class AnalyticsCacheAdmin(admin.ModelAdmin):
     ordering = ["-created_at"]
 
     fieldsets = (
-        (None, {
-            "fields": ("id", "cache_key", "cache_type", "source_metric")
-        }),
-        ("Data", {
-            "fields": ("cached_data", "metadata")
-        }),
-        ("Statistics", {
-            "fields": ("hit_count", "last_accessed", "expires_at")
-        }),
-        ("Timestamps", {
-            "fields": ("created_at", "updated_at"),
-            "classes": ("collapse",)
-        }),
+        (None, {"fields": ("id", "cache_key", "cache_type", "source_metric")}),
+        ("Data", {"fields": ("cached_data", "metadata")}),
+        ("Statistics", {"fields": ("hit_count", "last_accessed", "expires_at")}),
+        (
+            "Timestamps",
+            {"fields": ("created_at", "updated_at"), "classes": ("collapse",)},
+        ),
     )
 
     def get_queryset(self, request):
@@ -188,19 +182,13 @@ class AlertRuleAdmin(admin.ModelAdmin):
     ordering = ["severity", "name"]
 
     fieldsets = (
-        (None, {
-            "fields": ("id", "name", "description", "metric")
-        }),
-        ("Alert Conditions", {
-            "fields": ("condition", "threshold", "severity")
-        }),
-        ("Configuration", {
-            "fields": ("notification_channels", "is_active")
-        }),
-        ("Timestamps", {
-            "fields": ("created_at", "updated_at"),
-            "classes": ("collapse",)
-        }),
+        (None, {"fields": ("id", "name", "description", "metric")}),
+        ("Alert Conditions", {"fields": ("condition", "threshold", "severity")}),
+        ("Configuration", {"fields": ("notification_channels", "is_active")}),
+        (
+            "Timestamps",
+            {"fields": ("created_at", "updated_at"), "classes": ("collapse",)},
+        ),
     )
 
 
@@ -227,15 +215,9 @@ class TimeSeriesDataAdmin(admin.ModelAdmin):
     ordering = ["-timestamp"]
 
     fieldsets = (
-        (None, {
-            "fields": ("id", "measurement", "source", "timestamp")
-        }),
-        ("Scope", {
-            "fields": ("user_id", "project_id", "team_id")
-        }),
-        ("Data", {
-            "fields": ("value", "tags", "metadata")
-        }),
+        (None, {"fields": ("id", "measurement", "source", "timestamp")}),
+        ("Scope", {"fields": ("user_id", "project_id", "team_id")}),
+        ("Data", {"fields": ("value", "tags", "metadata")}),
     )
 
     def get_queryset(self, request):
@@ -266,22 +248,19 @@ class MetricSnapshotAdmin(admin.ModelAdmin):
     ordering = ["-calculated_at"]
 
     fieldsets = (
-        (None, {
-            "fields": ("id", "metric", "calculated_at")
-        }),
-        ("Scope", {
-            "fields": ("user_id", "project_id", "team_id")
-        }),
-        ("Period", {
-            "fields": ("period_start", "period_end")
-        }),
-        ("Result", {
-            "fields": ("value", "unit", "metadata", "data_points")
-        }),
+        (None, {"fields": ("id", "metric", "calculated_at")}),
+        ("Scope", {"fields": ("user_id", "project_id", "team_id")}),
+        ("Period", {"fields": ("period_start", "period_end")}),
+        ("Result", {"fields": ("value", "unit", "metadata", "data_points")}),
     )
 
     def get_queryset(self, request):
-        return super().get_queryset(request).select_related("metric").order_by("-calculated_at")
+        return (
+            super()
+            .get_queryset(request)
+            .select_related("metric")
+            .order_by("-calculated_at")
+        )
 
 
 # Customize admin site headers
