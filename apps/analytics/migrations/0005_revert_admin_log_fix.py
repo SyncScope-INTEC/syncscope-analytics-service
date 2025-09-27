@@ -7,13 +7,27 @@ from django.db import migrations, connection
 def revert_admin_log_fix(apps, schema_editor):
     """
     Revert the incorrect admin log fix that converted UUID back to integer.
-    The auth service correctly uses UUID for django_admin_log.user_id since it has UUID User PKs.
-    Analytics service should work with the UUID admin log since all services share the same database.
+    Only applies in production where services share the same database.
+    In CI/test environments, skip this migration since each service is isolated.
     """
     if connection.vendor != 'postgresql':
         return
 
     with connection.cursor() as cursor:
+        # Check if we're in a production environment with auth.users table
+        cursor.execute("""
+            SELECT EXISTS (
+                SELECT FROM information_schema.tables
+                WHERE table_schema = 'auth' AND table_name = 'users'
+            );
+        """)
+        auth_users_exists = cursor.fetchone()[0]
+
+        if not auth_users_exists:
+            # In CI/test environment - skip this migration
+            # Each service has its own isolated User model
+            return
+
         # Check current type - might be integer from previous migration 0004
         cursor.execute("""
             SELECT data_type FROM information_schema.columns
