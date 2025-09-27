@@ -184,7 +184,10 @@ class AlertRuleAdmin(admin.ModelAdmin):
     fieldsets = (
         (None, {"fields": ("id", "name", "metric_definition")}),
         ("Alert Conditions", {"fields": ("condition", "threshold_value", "severity")}),
-        ("Configuration", {"fields": ("notification_config", "is_active", "cooldown_minutes")}),
+        (
+            "Configuration",
+            {"fields": ("notification_config", "is_active", "cooldown_minutes")},
+        ),
         (
             "Timestamps",
             {"fields": ("created_at", "updated_at"), "classes": ("collapse",)},
@@ -251,7 +254,17 @@ class MetricSnapshotAdmin(admin.ModelAdmin):
         (None, {"fields": ("id", "metric_definition", "snapshot_time")}),
         ("Scope", {"fields": ("user_id", "project_id", "team_id")}),
         ("Period", {"fields": ("period_start", "period_end")}),
-        ("Result", {"fields": ("value", "raw_data_count", "calculation_metadata", "confidence_score")}),
+        (
+            "Result",
+            {
+                "fields": (
+                    "value",
+                    "raw_data_count",
+                    "calculation_metadata",
+                    "confidence_score",
+                )
+            },
+        ),
     )
 
     def get_queryset(self, request):
