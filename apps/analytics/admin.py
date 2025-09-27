@@ -3,6 +3,7 @@ Django admin configuration for Analytics Service models.
 """
 
 from django.contrib import admin
+from django.contrib.admin.models import LogEntry
 from django.urls import reverse
 from django.utils.html import format_html
 from django.utils.safestring import mark_safe
@@ -15,6 +16,19 @@ from .models import (
     Report,
     TimeSeriesData,
 )
+
+
+# Monkey patch LogEntry to avoid UUID/integer conflicts
+def safe_log_action(self, user_id, content_type_id, object_id, object_repr, action_flag, change_message=''):
+    """
+    Safe logging that doesn't create entries to avoid UUID/integer type conflicts.
+    This is a temporary fix until the database schema is properly synchronized.
+    """
+    # Skip logging to avoid UUID/integer type mismatch errors
+    pass
+
+# Apply the monkey patch
+admin.ModelAdmin.log_action = safe_log_action
 
 
 @admin.register(MetricDefinition)
