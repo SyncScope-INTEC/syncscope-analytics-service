@@ -156,9 +156,8 @@ if not USE_SQLITE:
 
 # Authentication backends for admin integration with auth service API
 AUTHENTICATION_BACKENDS = [
-    "apps.analytics.uuid_auth_backend.UUIDAuthBackend",  # Primary UUID-based auth
-    "apps.analytics.database_auth_backend.CachedAuthServiceAPIBackend",  # Fallback
-    "django.contrib.auth.backends.ModelBackend",  # Final fallback
+    "apps.analytics.database_auth_backend.CachedAuthServiceAPIBackend",
+    "django.contrib.auth.backends.ModelBackend",  # Fallback for local users
 ]
 
 # Password validation

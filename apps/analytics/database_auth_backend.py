@@ -4,15 +4,125 @@ API-based authentication backend that uses the SyncScope Auth Service.
 
 import logging
 import time
+import uuid
 
 from django.conf import settings
 from django.contrib.auth.backends import BaseBackend
-from django.contrib.auth.models import User
+
+# Don't import Django's default User model - we'll work directly with the database
 from django.core.cache import cache
+from django.db import connection
 
 import requests
 
 logger = logging.getLogger(__name__)
+
+
+class SimplePKField:
+    """Mock primary key field to mimic Django's field behavior"""
+
+    def value_to_string(self, user):
+        """Convert user ID to string for session storage"""
+        return str(user.id)
+
+
+class SimpleMeta:
+    """Mock _meta class to make SimpleUser compatible with Django's session management"""
+
+    def __init__(self):
+        self.pk = SimplePKField()
+
+
+class SimpleUser:
+    """
+    Simple user class that mimics Django's User for authentication purposes.
+    Works directly with auth.users table via database queries.
+    """
+
+    _meta = SimpleMeta()
+
+    def __init__(
+        self,
+        id,
+        email,
+        first_name,
+        last_name,
+        is_staff,
+        is_active,
+        is_superuser,
+        last_login,
+    ):
+        self.id = id
+        self.email = email
+        self.username = email  # Use email as username for Django compatibility
+        self.first_name = first_name or ""
+        self.last_name = last_name or ""
+        self.is_staff = is_staff or False
+        self.is_active = is_active or True
+        self.is_superuser = is_superuser or False
+        self.last_login = last_login
+        self.is_authenticated = True
+        self.is_anonymous = False
+
+    @property
+    def pk(self):
+        """Primary key property for Django compatibility"""
+        return self.id
+
+    def __str__(self):
+        return f"{self.first_name} {self.last_name} ({self.email})"
+
+    def save(self, *args, **kwargs):
+        """Override save to prevent any database writes"""
+        pass
+
+    def set_password(self, password):
+        """Override to prevent password changes"""
+        pass
+
+    @staticmethod
+    def get_user_by_id(user_id):
+        """Get user by ID from auth.users table"""
+        try:
+            with connection.cursor() as cursor:
+                cursor.execute(
+                    """
+                    SELECT id, email, first_name, last_name, is_staff, is_active, is_superuser, last_login
+                    FROM auth.users
+                    WHERE id = %s AND is_active = true
+                """,
+                    [str(user_id)],
+                )
+
+                user_data = cursor.fetchone()
+                if user_data:
+                    return SimpleUser(*user_data)
+                return None
+        except Exception as e:
+            logger.error(f"Error getting user by ID {user_id}: {e}")
+            return None
+
+    @staticmethod
+    def get_user_by_email(email):
+        """Get user by email from auth.users table"""
+        try:
+            with connection.cursor() as cursor:
+                cursor.execute(
+                    """
+                    SELECT id, email, first_name, last_name, is_staff, is_active, is_superuser, last_login
+                    FROM auth.users
+                    WHERE email = %s AND is_active = true
+                """,
+                    [email],
+                )
+
+                user_data = cursor.fetchone()
+                if user_data:
+                    return SimpleUser(*user_data)
+                return None
+        except Exception as e:
+            logger.error(f"Error getting user by email {email}: {e}")
+            return None
 
 
 class AuthServiceAPIBackend(BaseBackend):
@@ -86,10 +196,7 @@ class AuthServiceAPIBackend(BaseBackend):
         """
         Get user by ID for session management.
         """
-        try:
-            return User.objects.get(pk=user_id)
-        except User.DoesNotExist:
-            return None
+        return SimpleUser.get_user_by_id(user_id)
 
     def _authenticate_with_service(self, email, password, max_retries=3):
         """
@@ -147,47 +254,23 @@ class AuthServiceAPIBackend(BaseBackend):
             auth_service_uuid = user_data.get("id")  # UUID from auth service
             role = user_data.get("role", "developer")
 
-            # Create or update local user
-            user, created = User.objects.get_or_create(
-                username=email,
-                defaults={
-                    "email": email,
-                    "first_name": user_data.get("first_name", ""),
-                    "last_name": user_data.get("last_name", ""),
-                    "is_staff": user_data.get("is_staff", False)
-                    or role in ["admin", "supervisor"],
-                    "is_superuser": user_data.get("is_superuser", False)
-                    or role == "admin",
-                    "is_active": user_data.get("is_active", True),
-                },
+            # Create SimpleUser object directly from auth service data
+            user = SimpleUser(
+                id=auth_service_uuid,  # Use the UUID from auth service
+                email=email,
+                first_name=user_data.get("first_name", ""),
+                last_name=user_data.get("last_name", ""),
+                is_staff=user_data.get("is_staff", False)
+                or role in ["admin", "supervisor"],
+                is_active=user_data.get("is_active", True),
+                is_superuser=user_data.get("is_superuser", False) or role == "admin",
+                last_login=None,
             )
 
-            # Store auth service UUID for admin log integration
-            if auth_service_uuid:
-                cache_key = f"auth_service_uuid_{user.id}"
-                cache.set(cache_key, auth_service_uuid, timeout=86400)  # 24 hours
-
-            if not created:
-                # Update existing user info to sync with auth service
-                user.email = email
-                user.first_name = user_data.get("first_name", "")
-                user.last_name = user_data.get("last_name", "")
-                user.is_staff = user_data.get("is_staff", False) or role in [
-                    "admin",
-                    "supervisor",
-                ]
-                user.is_superuser = (
-                    user_data.get("is_superuser", False) or role == "admin"
-                )
-                user.is_active = user_data.get("is_active", True)
-                user.save()
-                logger.info(
-                    f"AuthServiceAPIBackend: Updated existing local user: {user.email}"
-                )
-            else:
-                logger.info(
-                    f"AuthServiceAPIBackend: Created new local user: {user.email}"
-                )
+            # Log successful user creation
+            logger.info(
+                f"AuthServiceAPIBackend: Created SimpleUser for: {user.email} with UUID: {auth_service_uuid}"
+            )
 
             return user
 
