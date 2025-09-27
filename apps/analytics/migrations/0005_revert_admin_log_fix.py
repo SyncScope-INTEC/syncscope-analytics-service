@@ -28,8 +28,8 @@ def revert_admin_log_fix(apps, schema_editor):
             # Drop constraint
             cursor.execute("ALTER TABLE django_admin_log DROP CONSTRAINT IF EXISTS django_admin_log_user_id_fkey CASCADE;")
 
-            # Convert back to UUID to match auth service setup
-            cursor.execute("ALTER TABLE django_admin_log ALTER COLUMN user_id TYPE UUID;")
+            # Convert back to UUID to match auth service setup - use proper USING clause
+            cursor.execute("ALTER TABLE django_admin_log ALTER COLUMN user_id TYPE UUID USING NULL;")
 
             # Add constraint to auth.users table (UUID PKs)
             cursor.execute("""
