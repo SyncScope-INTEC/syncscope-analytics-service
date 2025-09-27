@@ -1,7 +1,7 @@
 # Generated manually on 2025-09-27 06:50
 # Create auth_user view that maps to auth.users to fix Django admin compatibility
 
-from django.db import migrations, connection
+from django.db import connection, migrations
 
 
 def create_auth_user_view(apps, schema_editor):
@@ -10,17 +10,19 @@ def create_auth_user_view(apps, schema_editor):
     This allows Django's admin to work with our UUID-based auth.users table
     while still expecting the standard auth_user table structure.
     """
-    if connection.vendor != 'postgresql':
+    if connection.vendor != "postgresql":
         return
 
     with connection.cursor() as cursor:
         # Check if auth.users table exists
-        cursor.execute("""
+        cursor.execute(
+            """
             SELECT EXISTS (
                 SELECT FROM information_schema.tables
                 WHERE table_schema = 'auth' AND table_name = 'users'
             );
-        """)
+        """
+        )
         auth_users_exists = cursor.fetchone()[0]
 
         if not auth_users_exists:
@@ -31,7 +33,8 @@ def create_auth_user_view(apps, schema_editor):
         cursor.execute("DROP TABLE IF EXISTS auth_user CASCADE;")
 
         # Create auth_user view that maps to auth.users
-        cursor.execute("""
+        cursor.execute(
+            """
             CREATE VIEW auth_user AS
             SELECT
                 id,
@@ -46,14 +49,15 @@ def create_auth_user_view(apps, schema_editor):
                 is_active,
                 created_at as date_joined
             FROM auth.users;
-        """)
+        """
+        )
 
         print("Created auth_user view mapping to auth.users")
 
 
 def drop_auth_user_view(apps, schema_editor):
     """Drop the auth_user view"""
-    if connection.vendor != 'postgresql':
+    if connection.vendor != "postgresql":
         return
 
     with connection.cursor() as cursor:
@@ -63,7 +67,7 @@ def drop_auth_user_view(apps, schema_editor):
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('analytics', '0006_fix_admin_log_auth_user_reference'),
+        ("analytics", "0006_fix_admin_log_auth_user_reference"),
     ]
 
     operations = [
