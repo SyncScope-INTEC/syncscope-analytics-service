@@ -140,9 +140,11 @@ class AuthServiceAPIBackend(BaseBackend):
     def _get_or_create_local_user(self, user_data):
         """
         Create or update a local Django user for admin interface.
+        Maps auth service UUID to local user for admin log compatibility.
         """
         try:
             email = user_data["email"]
+            auth_service_uuid = user_data.get("id")  # UUID from auth service
             role = user_data.get("role", "developer")
 
             # Create or update local user
@@ -159,6 +161,11 @@ class AuthServiceAPIBackend(BaseBackend):
                     "is_active": user_data.get("is_active", True),
                 },
             )
+
+            # Store auth service UUID for admin log integration
+            if auth_service_uuid:
+                cache_key = f"auth_service_uuid_{user.id}"
+                cache.set(cache_key, auth_service_uuid, timeout=86400)  # 24 hours
 
             if not created:
                 # Update existing user info to sync with auth service
