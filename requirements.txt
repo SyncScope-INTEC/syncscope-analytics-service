@@ -9,7 +9,7 @@ django-extensions==3.2.3
 psycopg2-binary>=2.9.10
 django-redis==6.0.0
 redis==6.4.0
-dj-database-url==2.1.0
+dj-database-url==3.0.1
 
 # Authentication & Security
 djangorestframework-simplejwt==5.5.1
