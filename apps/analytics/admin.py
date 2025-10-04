@@ -58,14 +58,18 @@ def safe_index(self, request, extra_context=None):
     return render(request, self.index_template or "admin/index.html", context)
 
 
-def safe_get_app_list(self, request):
+def safe_get_app_list(self, request, app_label=None):
     """
     Safe get_app_list that doesn't include recent actions to avoid LogEntry queries.
     """
     app_dict = {}
 
     for model, model_admin in self._registry.items():
-        app_label = model._meta.app_label
+        model_app_label = model._meta.app_label
+
+        # Filter by app_label if specified
+        if app_label is not None and model_app_label != app_label:
+            continue
 
         has_module_perms = model_admin.has_module_permission(request)
         if not has_module_perms:
@@ -75,7 +79,7 @@ def safe_get_app_list(self, request):
         if True not in perms.values():
             continue
 
-        info = (app_label, model._meta.model_name)
+        info = (model_app_label, model._meta.model_name)
         model_dict = {
             "name": str(model._meta.verbose_name_plural),
             "object_name": model._meta.object_name,
@@ -99,19 +103,19 @@ def safe_get_app_list(self, request):
             except:
                 pass
 
-        if app_label in app_dict:
-            app_dict[app_label]["models"].append(model_dict)
+        if model_app_label in app_dict:
+            app_dict[model_app_label]["models"].append(model_dict)
         else:
             from django.urls import reverse
 
             try:
-                app_url = reverse("admin:app_list", kwargs={"app_label": app_label})
+                app_url = reverse("admin:app_list", kwargs={"app_label": model_app_label})
             except:
                 app_url = "#"
 
-            app_dict[app_label] = {
-                "name": app_label.title(),
-                "app_label": app_label,
+            app_dict[model_app_label] = {
+                "name": model_app_label.title(),
+                "app_label": model_app_label,
                 "app_url": app_url,
                 "has_module_perms": has_module_perms,
                 "models": [model_dict],
