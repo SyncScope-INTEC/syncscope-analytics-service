@@ -109,7 +109,9 @@ def safe_get_app_list(self, request, app_label=None):
             from django.urls import reverse
 
             try:
-                app_url = reverse("admin:app_list", kwargs={"app_label": model_app_label})
+                app_url = reverse(
+                    "admin:app_list", kwargs={"app_label": model_app_label}
+                )
             except:
                 app_url = "#"
 
