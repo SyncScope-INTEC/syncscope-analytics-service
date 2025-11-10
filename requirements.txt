@@ -1,5 +1,5 @@
 # Core Django dependencies
-Django==5.2.7
+Django==5.2.8
 drf-spectacular==0.28.0
 djangorestframework==3.16.1
 django-cors-headers==4.9.0
