@@ -42,7 +42,7 @@ python-dotenv==1.1.1
 isort==7.0.0
 
 # Testing
-pytest==8.4.2
+pytest==9.0.0
 pytest-django==4.11.1
 pytest-cov==7.0.0
 coverage==7.11.0
