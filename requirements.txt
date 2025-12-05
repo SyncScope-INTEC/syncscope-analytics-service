@@ -37,7 +37,7 @@ gunicorn==23.0.0
 whitenoise==6.11.0
 
 # Development
-black==25.9.0
+black==25.11.0
 python-dotenv==1.2.1
 isort==7.0.0
 
