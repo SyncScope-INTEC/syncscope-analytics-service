@@ -56,10 +56,10 @@ class RateLimitMiddleware(MiddlewareMixin):
 
         # Different rate limits for different endpoints
         if request.path.startswith("/analytics/reports/generate"):
-            limit = 10  # 10 report generations per hour
+            limit = 50  # 50 report generations per hour
             window = 3600
         elif request.path.startswith("/analytics/reports/export"):
-            limit = 20  # 20 exports per hour
+            limit = 50  # 50 exports per hour
             window = 3600
         elif request.path.startswith("/analytics/metrics/calculate"):
             limit = 100  # 100 metric calculations per hour
